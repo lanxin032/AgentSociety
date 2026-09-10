@@ -3,6 +3,7 @@
 !/.gitignore
 !/AGENTS.md
 !/README.md
+!/environment.yml
 !/policy_v3/
 !/policy_mve/
 !/custom/

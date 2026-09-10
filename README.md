@@ -1,5 +1,49 @@
 # Policy Mix Cloud Development
 
+## Local macOS environment
+
+The local Conda environment is `agentsociety` (Python 3.12). `environment.yml`
+pins AgentSociety 2.8.4 and Ray 2.55.1 to the cloud versions recorded below.
+MCP is constrained to 1.x because this framework imports `mcp.server.fastmcp`,
+which is no longer available in MCP 2.x.
+The latest online documentation may describe a newer framework release.
+To recreate the environment on another machine:
+
+```sh
+conda env create -f environment.yml
+```
+
+On this Mac, load the local configuration before running Python entry points:
+
+```sh
+cd /Users/zy/Desktop/AgentSoiety
+conda activate agentsociety
+set -a
+source .env
+set +a
+```
+
+The local `.env` is ignored by Git and has owner-only permissions (0600).
+It configures `https://llmapi.fiblab.net/v1`; the initial model choices follow
+the existing project configuration (`deepseek-v4-flash`, embedding `bge-m3`).
+These model choices and credentials still require live API verification.
+Create your own `.env` when recreating this environment; do not commit keys.
+
+Offline validation (does not call a paid model):
+
+```sh
+python -m pip check
+python tools/check_remote.py
+python -B -m unittest discover -s tests -v
+```
+
+Despite its historical name, `check_remote.py` inspects the Python environment
+where it is run. It replaces credentials with placeholders and blocks Python
+network connections during its import checks. Local environment setup does
+not grant a new experiment budget. Existing paid runners retain their budget,
+authorization and loopback-proxy requirements; `.env` does not replace their
+separate `.env.smoke` configuration or budget ledger.
+
 ## GitHub source distribution
 
 This repository contains the canonical source, tests, selected research protocols,
