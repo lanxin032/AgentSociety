@@ -1,0 +1,108 @@
+{
+  "version": "v3-action-comprehension-benchmark-20260910-1.0",
+  "status": "offline_prepared_not_model_tested",
+  "pointer_context": {
+    "observation": "case.observation_path JSON",
+    "history": "case.history_path JSON"
+  },
+  "source_sha256_scope": "Full source JSONL file bytes; line SHA256 excludes the line terminator.",
+  "old_system_sha256": "1a7fd776dad2665b1ab4e7e91cf69b638f62acf6a60bf038661193311297922f",
+  "case_evidence": [
+    {
+      "case_id": "C01",
+      "source_observation_line_sha256": "f7cdf9dc381ebaf649761802601a317d175238fba4bc6ee6800a9cf74015d210",
+      "source_decision_line_sha256": "62cbcd4c5f240af177ad73763561244e570dd50f271641a4ee5385ecdf97619f",
+      "observation_canonical_sha256": "41f90a7f5d4454c57582f43728f1dd815e3476cd91b45bbcac782ed242e40dd1",
+      "history_canonical_sha256": "a1dc062ea75b9ee5fb1a2fb9f1894ed52baa2bac29155571b51640b0de781301",
+      "observation_file_sha256": "6f0f72289c13c2902c94c4ce89bf37108822751d19b59415bda26cf712fd7442",
+      "history_file_sha256": "7ce9963da5a3d7236955fc1be9eb3976cb8608e438ddca3801aa37b9c4ce046b",
+      "saved_decision_input_observation_exact_equal": true,
+      "selected_response_not_exported": true,
+      "old_new_observation_identical": true,
+      "source_history_note": "Original recent_history only; no benchmark answers or new task responses."
+    },
+    {
+      "case_id": "C02",
+      "source_observation_line_sha256": "a26a1b2df1cc30819d6357d0113123544dadfac9856e77062715b60411510467",
+      "source_decision_line_sha256": "7ab942b85ee068f73c7cdb3ebb9ecf2503428439ff8b0d5a8ba2b4d9cc490828",
+      "observation_canonical_sha256": "4c241be69d54d4319e674249e324bd43e03efbf26a7d3ec8319e7deb3eff2363",
+      "history_canonical_sha256": "b60c28ed9847a4c193e15406e1d632b702b646718463c0b3020fb182f7972b65",
+      "observation_file_sha256": "835e7de736046f59d60cb5c781fb5fbe87f2184f70072454449bff5d623f1562",
+      "history_file_sha256": "ec7001348dd8aeb1c46d222d330a44d5f6235c1792fb8428f91a177265026f06",
+      "saved_decision_input_observation_exact_equal": true,
+      "selected_response_not_exported": true,
+      "old_new_observation_identical": true,
+      "source_history_note": "Original recent_history only; no benchmark answers or new task responses."
+    },
+    {
+      "case_id": "C03",
+      "source_observation_line_sha256": "47ad5114a02fe4d321e8e4e866da8e94101bf0020c8869a4197993e49056898e",
+      "source_decision_line_sha256": "f190b54a5b8d3b02c7329c0ea6f5136f89cc010121bb2db28996e268515bca0d",
+      "observation_canonical_sha256": "24dc3a81531d982fdadd4f1370fd939e68e152ce557ed0cee4a930d211f26fb7",
+      "history_canonical_sha256": "f904bb3f4e50b97e21c658a88f233fcf31715e2a446e35d15dc37f4c2b51b9f6",
+      "observation_file_sha256": "1206c6a1496b1651392d0ca72b6f8fc386f3f71857392aaa83c24295ee12f4de",
+      "history_file_sha256": "fa2b07284e8b0496ecb95fd0b97dbf1171babd484d9ab02c52242f95356cecae",
+      "saved_decision_input_observation_exact_equal": true,
+      "selected_response_not_exported": true,
+      "old_new_observation_identical": true,
+      "source_history_note": "Original recent_history only; no benchmark answers or new task responses."
+    },
+    {
+      "case_id": "C04",
+      "source_observation_line_sha256": "3a2b092a5428b31d3b27a32180f9ce6b5e1c9d18ceedea387af6324119aa4e17",
+      "source_decision_line_sha256": "5cc5b434cca196fbf9aa70c49e12dee69789adcbceef3d71eac6e1fc0c968194",
+      "observation_canonical_sha256": "cda5d27ec1b5687e89d14f6f30839f71fbea90e4604de86d3705634f983bed1b",
+      "history_canonical_sha256": "b828f07e93f380c041c8fa927d09713a6e70aa89b613bc4330754426da03fbf5",
+      "observation_file_sha256": "97d6c43685dad81de778959fc66aa8e7418d8f112e60af09e4fbbafc053f5a1b",
+      "history_file_sha256": "6ad91795c435b08f620835d088432d4f639de8fafab092659c1202c604589078",
+      "saved_decision_input_observation_exact_equal": true,
+      "selected_response_not_exported": true,
+      "old_new_observation_identical": true,
+      "source_history_note": "Original recent_history only; no benchmark answers or new task responses."
+    },
+    {
+      "case_id": "C05",
+      "source_observation_line_sha256": "23f9680ab72054a9b80ec3dc013dea14e48748ac51ae9e5501478b6ec19bc44c",
+      "source_decision_line_sha256": "bccdac1dd71867d1a0ef11dbec43ccea222ec5d6283feba891e80b3928f1b662",
+      "observation_canonical_sha256": "c5d19a8e15623b9d98e72a836d21a08dc82995c161b858938dbba9e7fa6e8c16",
+      "history_canonical_sha256": "3612639d05cf25f92292fe28c466c9e9605dcc3e69d610f8074f7b39e29703c4",
+      "observation_file_sha256": "3c806958eb6f70b7bd4e923098aae15d26b40c0437247fc6dad629953d0bd77a",
+      "history_file_sha256": "c50009245f713cafd05d29c3eea8d48780c882d020e760bdcfa0101e50e396ef",
+      "saved_decision_input_observation_exact_equal": true,
+      "selected_response_not_exported": true,
+      "old_new_observation_identical": true,
+      "source_history_note": "Original recent_history only; no benchmark answers or new task responses."
+    },
+    {
+      "case_id": "C06",
+      "source_observation_line_sha256": "3681564245b2028aade21b15a7ee72036a2f3b0b4c1cb8a14168da1793e6c291",
+      "source_decision_line_sha256": "839992740010d6f6d4b43f25aeded846e20a259e4c5d3994fc648c4653073b4f",
+      "observation_canonical_sha256": "c62d88d2d346c72fccca80d2af9da10c53266b3d6be6c29b179d3da4fabd3b7f",
+      "history_canonical_sha256": "885339c501e50e502b4a305b90ec34b62c4bf426a55231000a58b6e0a31f21d5",
+      "observation_file_sha256": "739229a59e1f5a38c5e6e0f8b5119eb1b80e63523f2f45d1810dca4571cd974c",
+      "history_file_sha256": "142a5e65f71b26d0b8338e5e4b82f43a8cfd1af1bf22d09f64ea0643eb4e680f",
+      "saved_decision_input_observation_exact_equal": true,
+      "selected_response_not_exported": true,
+      "old_new_observation_identical": true,
+      "source_history_note": "Original recent_history only; no benchmark answers or new task responses."
+    }
+  ],
+  "rule_definition_sources": [
+    {
+      "path": "policy_v3/llm.py",
+      "sha256": "8eb49e5fa3021878a05e879c2add7b6f303bc67488c4859cc16fb43395a752b8"
+    },
+    {
+      "path": "policy_v3/core.py",
+      "sha256": "be24488d85fd02d90a5b792bea56749460a341e26c56486dc83520ef1308f7cc"
+    },
+    {
+      "path": "policy_v3/spec.py",
+      "sha256": "2e1ee17971fedebf421793f74a1043d5315b169479b3ecf44c2734556d77084d"
+    }
+  ],
+  "hidden_world_files_read": [],
+  "network_calls": 0,
+  "world_executions": 0,
+  "validation_scope": "File extraction and visible-evidence pointer checks only; no model comprehension test."
+}

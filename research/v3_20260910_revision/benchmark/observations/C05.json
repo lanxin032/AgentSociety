@@ -1,0 +1,2634 @@
+{
+  "actor_id": 4,
+  "available_actions": [
+    {
+      "kind": "report_status",
+      "params": {
+        "recipient": 3
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "P:1"
+    },
+    {
+      "kind": "propose_project",
+      "params": {
+        "mode": "conventional"
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "片区2|供水服务异常"
+    },
+    {
+      "kind": "propose_project",
+      "params": {
+        "mode": "structured"
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "片区3|供水服务异常"
+    },
+    {
+      "kind": "request_project_work",
+      "params": {
+        "department": 3
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "P:1"
+    },
+    {
+      "kind": "report_status",
+      "params": {
+        "recipient": 2
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "P:1"
+    },
+    {
+      "kind": "request_project_work",
+      "params": {
+        "department": 2
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "P:1"
+    },
+    {
+      "kind": "query_status",
+      "params": {
+        "department": 2
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "P:1"
+    },
+    {
+      "kind": "propose_project",
+      "params": {
+        "mode": "conventional"
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "片区3|供水服务异常"
+    },
+    {
+      "kind": "cancel_project",
+      "params": {
+        "reason_code": "budget_or_capacity_infeasible"
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "P:1"
+    },
+    {
+      "kind": "propose_project",
+      "params": {
+        "mode": "conventional"
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "片区4|供水服务异常"
+    },
+    {
+      "kind": "query_status",
+      "params": {
+        "department": 3
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "P:1"
+    },
+    {
+      "kind": "propose_project",
+      "params": {
+        "mode": "structured"
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "片区4|供水服务异常"
+    },
+    {
+      "kind": "accept_project",
+      "params": {},
+      "reason": "依据本人已获知材料选择",
+      "target": "P:1"
+    },
+    {
+      "kind": "wait",
+      "params": {},
+      "reason": "依据本人已获知材料选择",
+      "target": null
+    },
+    {
+      "kind": "adjust_project",
+      "params": {
+        "decision": "pause",
+        "reason_code": "await_information_or_capacity"
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "P:1"
+    },
+    {
+      "kind": "propose_project",
+      "params": {
+        "mode": "structured"
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "片区2|供水服务异常"
+    },
+    {
+      "kind": "cancel_project",
+      "params": {
+        "reason_code": "evidence_does_not_support"
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "P:1"
+    }
+  ],
+  "horizon": 30,
+  "inbox": [
+    {
+      "created_round": 7,
+      "delivered_round": 8,
+      "id": "message-7",
+      "kind": "status_reply",
+      "object": "P:1",
+      "payload": {
+        "records": [
+          {
+            "author": 4,
+            "created_round": 1,
+            "data": {
+              "owner": 4
+            },
+            "id": "record-2",
+            "kind": "project_lead_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 2,
+            "data": {
+              "evidence": [
+                {
+                  "defect_observed": true,
+                  "facility": "F1-1",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-2",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-3",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                }
+              ]
+            },
+            "id": "record-5",
+            "kind": "project_diagnosis",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 3,
+            "data": {
+              "budget": 6.0,
+              "plan": "replace_shared_main",
+              "revision": 1,
+              "template": {
+                "construction": [
+                  {
+                    "department": 3,
+                    "predecessor_department": null
+                  },
+                  {
+                    "department": 2,
+                    "predecessor_department": 3
+                  }
+                ],
+                "note": "Public proposed-plan template only; it does not establish a shared defect or a correct intervention.",
+                "plan": "replace_shared_main",
+                "reviews": [
+                  2,
+                  3
+                ]
+              }
+            },
+            "id": "record-6",
+            "kind": "proposed_plan",
+            "object": "P:1"
+          },
+          {
+            "author": 2,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 2,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:2",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-8",
+            "kind": "review_completed",
+            "object": "P:1"
+          }
+        ]
+      },
+      "replied": false,
+      "sender": 2
+    },
+    {
+      "created_round": 8,
+      "delivered_round": 9,
+      "id": "message-8",
+      "kind": "status_reply",
+      "object": "P:1",
+      "payload": {
+        "records": [
+          {
+            "author": 4,
+            "created_round": 1,
+            "data": {
+              "owner": 4
+            },
+            "id": "record-2",
+            "kind": "project_lead_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 2,
+            "data": {
+              "evidence": [
+                {
+                  "defect_observed": true,
+                  "facility": "F1-1",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-2",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-3",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                }
+              ]
+            },
+            "id": "record-5",
+            "kind": "project_diagnosis",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 3,
+            "data": {
+              "budget": 6.0,
+              "plan": "replace_shared_main",
+              "revision": 1,
+              "template": {
+                "construction": [
+                  {
+                    "department": 3,
+                    "predecessor_department": null
+                  },
+                  {
+                    "department": 2,
+                    "predecessor_department": 3
+                  }
+                ],
+                "note": "Public proposed-plan template only; it does not establish a shared defect or a correct intervention.",
+                "plan": "replace_shared_main",
+                "reviews": [
+                  2,
+                  3
+                ]
+              }
+            },
+            "id": "record-6",
+            "kind": "proposed_plan",
+            "object": "P:1"
+          },
+          {
+            "author": 3,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 3,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:3",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-9",
+            "kind": "review_completed",
+            "object": "P:1"
+          },
+          {
+            "author": 2,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 2,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:2",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-8",
+            "kind": "review_completed",
+            "object": "P:1"
+          },
+          {
+            "author": 3,
+            "created_round": 7,
+            "data": {
+              "accepted": true
+            },
+            "id": "record-10",
+            "kind": "project_confirmation",
+            "object": "P:1"
+          }
+        ]
+      },
+      "replied": false,
+      "sender": 3
+    },
+    {
+      "created_round": 9,
+      "delivered_round": 10,
+      "id": "message-13",
+      "kind": "status_reply",
+      "object": "P:1",
+      "payload": {
+        "records": [
+          {
+            "author": 4,
+            "created_round": 1,
+            "data": {
+              "owner": 4
+            },
+            "id": "record-2",
+            "kind": "project_lead_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 2,
+            "data": {
+              "evidence": [
+                {
+                  "defect_observed": true,
+                  "facility": "F1-1",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-2",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-3",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                }
+              ]
+            },
+            "id": "record-5",
+            "kind": "project_diagnosis",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 3,
+            "data": {
+              "budget": 6.0,
+              "plan": "replace_shared_main",
+              "revision": 1,
+              "template": {
+                "construction": [
+                  {
+                    "department": 3,
+                    "predecessor_department": null
+                  },
+                  {
+                    "department": 2,
+                    "predecessor_department": 3
+                  }
+                ],
+                "note": "Public proposed-plan template only; it does not establish a shared defect or a correct intervention.",
+                "plan": "replace_shared_main",
+                "reviews": [
+                  2,
+                  3
+                ]
+              }
+            },
+            "id": "record-6",
+            "kind": "proposed_plan",
+            "object": "P:1"
+          },
+          {
+            "author": 3,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 3,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:3",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-9",
+            "kind": "review_completed",
+            "object": "P:1"
+          },
+          {
+            "author": 2,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 2,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:2",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-8",
+            "kind": "review_completed",
+            "object": "P:1"
+          },
+          {
+            "author": 3,
+            "created_round": 7,
+            "data": {
+              "accepted": true
+            },
+            "id": "record-10",
+            "kind": "project_confirmation",
+            "object": "P:1"
+          }
+        ]
+      },
+      "replied": false,
+      "sender": 3
+    },
+    {
+      "created_round": 19,
+      "delivered_round": 20,
+      "id": "message-18",
+      "kind": "status_query",
+      "object": "P:1",
+      "payload": {},
+      "replied": true,
+      "sender": 2
+    },
+    {
+      "created_round": 26,
+      "delivered_round": 27,
+      "id": "message-22",
+      "kind": "status_query",
+      "object": "P:1",
+      "payload": {},
+      "replied": true,
+      "sender": 2
+    }
+  ],
+  "last_receipt": {
+    "action_kind": "request_project_work",
+    "code": "project_task_request_sent",
+    "resources_paid": {
+      "capital": 0.0,
+      "crew": 0,
+      "labor": 0.3
+    },
+    "round": 28,
+    "status": "executed",
+    "target": "P:1"
+  },
+  "projects": [
+    {
+      "budget_approved": 6.0,
+      "budget_requested": 6.0,
+      "capital_spent": 0,
+      "evidence": [
+        {
+          "defect_observed": true,
+          "facility": "F1-1",
+          "method": "现场管线溯源",
+          "observed_asset": "勘察资产-61480bb9"
+        },
+        {
+          "defect_observed": true,
+          "facility": "F1-2",
+          "method": "现场管线溯源",
+          "observed_asset": "勘察资产-61480bb9"
+        },
+        {
+          "defect_observed": true,
+          "facility": "F1-3",
+          "method": "现场管线溯源",
+          "observed_asset": "勘察资产-61480bb9"
+        }
+      ],
+      "facilities": [
+        "F1-1",
+        "F1-2",
+        "F1-3"
+      ],
+      "id": "P:1",
+      "lead_confirmed": true,
+      "mode": "structured",
+      "own_confirmed": true,
+      "owner": 4,
+      "paused": false,
+      "plan": "replace_shared_main",
+      "project_package": {
+        "note": "仅整理已有授权材料及拟案任务，未收到的意见和进度仍未知。",
+        "participants": [
+          2,
+          3,
+          4
+        ],
+        "received_review_departments": [
+          2,
+          3
+        ],
+        "template": {
+          "construction": [
+            {
+              "department": 3,
+              "predecessor_department": null
+            },
+            {
+              "department": 2,
+              "predecessor_department": 3
+            }
+          ],
+          "note": "Public proposed-plan template only; it does not establish a shared defect or a correct intervention.",
+          "plan": "replace_shared_main",
+          "reviews": [
+            2,
+            3
+          ]
+        }
+      },
+      "ready_round": null,
+      "received_records": [
+        {
+          "author": 4,
+          "created_round": 1,
+          "data": {
+            "owner": 4
+          },
+          "id": "record-2",
+          "kind": "project_lead_confirmation",
+          "object": "P:1"
+        },
+        {
+          "author": 4,
+          "created_round": 2,
+          "data": {
+            "evidence": [
+              {
+                "defect_observed": true,
+                "facility": "F1-1",
+                "method": "现场管线溯源",
+                "observed_asset": "勘察资产-61480bb9"
+              },
+              {
+                "defect_observed": true,
+                "facility": "F1-2",
+                "method": "现场管线溯源",
+                "observed_asset": "勘察资产-61480bb9"
+              },
+              {
+                "defect_observed": true,
+                "facility": "F1-3",
+                "method": "现场管线溯源",
+                "observed_asset": "勘察资产-61480bb9"
+              }
+            ]
+          },
+          "id": "record-5",
+          "kind": "project_diagnosis",
+          "object": "P:1"
+        },
+        {
+          "author": 4,
+          "created_round": 3,
+          "data": {
+            "budget": 6.0,
+            "plan": "replace_shared_main",
+            "revision": 1,
+            "template": {
+              "construction": [
+                {
+                  "department": 3,
+                  "predecessor_department": null
+                },
+                {
+                  "department": 2,
+                  "predecessor_department": 3
+                }
+              ],
+              "note": "Public proposed-plan template only; it does not establish a shared defect or a correct intervention.",
+              "plan": "replace_shared_main",
+              "reviews": [
+                2,
+                3
+              ]
+            }
+          },
+          "id": "record-6",
+          "kind": "proposed_plan",
+          "object": "P:1"
+        },
+        {
+          "author": 2,
+          "created_round": 4,
+          "data": {
+            "capital_spent": 0,
+            "task": {
+              "actor": 2,
+              "as_of_round": 4,
+              "completed_round": 4,
+              "id": "J:P:1:1:review_project:2",
+              "kind": "review_project",
+              "object": "P:1",
+              "opinion": "approve",
+              "prerequisites": [],
+              "revision": 1,
+              "scope": "project",
+              "state": "completed"
+            }
+          },
+          "id": "record-8",
+          "kind": "review_completed",
+          "object": "P:1"
+        },
+        {
+          "author": 3,
+          "created_round": 4,
+          "data": {
+            "capital_spent": 0,
+            "task": {
+              "actor": 3,
+              "as_of_round": 4,
+              "completed_round": 4,
+              "id": "J:P:1:1:review_project:3",
+              "kind": "review_project",
+              "object": "P:1",
+              "opinion": "approve",
+              "prerequisites": [],
+              "revision": 1,
+              "scope": "project",
+              "state": "completed"
+            }
+          },
+          "id": "record-9",
+          "kind": "review_completed",
+          "object": "P:1"
+        },
+        {
+          "author": 3,
+          "created_round": 7,
+          "data": {
+            "accepted": true
+          },
+          "id": "record-10",
+          "kind": "project_confirmation",
+          "object": "P:1"
+        },
+        {
+          "author": 4,
+          "created_round": 9,
+          "data": {
+            "amount": 6.0,
+            "reserved_resources": false,
+            "revision": 1
+          },
+          "id": "record-11",
+          "kind": "budget_authorization",
+          "object": "P:1"
+        }
+      ],
+      "received_reviews": {
+        "2": "approve",
+        "3": "approve"
+      },
+      "requested": {
+        "implement_project": [
+          2,
+          3
+        ],
+        "review_project": [
+          2,
+          3
+        ]
+      },
+      "revision": 1,
+      "state": "approved",
+      "tasks": [
+        {
+          "actor": 2,
+          "as_of_round": 4,
+          "completed_round": 4,
+          "id": "J:P:1:1:review_project:2",
+          "kind": "review_project",
+          "object": "P:1",
+          "opinion": "approve",
+          "prerequisites": [],
+          "revision": 1,
+          "scope": "project",
+          "state": "completed"
+        },
+        {
+          "actor": 3,
+          "as_of_round": 4,
+          "completed_round": 4,
+          "id": "J:P:1:1:review_project:3",
+          "kind": "review_project",
+          "object": "P:1",
+          "opinion": "approve",
+          "prerequisites": [],
+          "revision": 1,
+          "scope": "project",
+          "state": "completed"
+        },
+        {
+          "actor": 2,
+          "as_of_round": 9,
+          "completed_round": null,
+          "id": "J:P:1:1:implement_project:2",
+          "kind": "implement_project",
+          "object": "P:1",
+          "opinion": null,
+          "prerequisites": [
+            "J:P:1:1:implement_project:3"
+          ],
+          "revision": 1,
+          "scope": "project",
+          "state": "pending"
+        },
+        {
+          "actor": 3,
+          "as_of_round": 9,
+          "completed_round": null,
+          "id": "J:P:1:1:implement_project:3",
+          "kind": "implement_project",
+          "object": "P:1",
+          "opinion": null,
+          "prerequisites": [],
+          "revision": 1,
+          "scope": "project",
+          "state": "pending"
+        }
+      ],
+      "topic": "片区1|供水服务异常"
+    }
+  ],
+  "public_rules": {
+    "budget": "审批授权额度不预留施工资源；实际执行仍竞争共同资金和施工容量。",
+    "case_workflow": "派单后主办部门调查；普通联系、回复和进度报告合法可用。联合清单需本人确认才激活共享；未确认仍可依法普通办理。作业依赖与资源对所有流程相同，技术交接须有已送达的合法完成回执。",
+    "communication": "消息结算后在下一轮送达；手动联系/请求/回复计通信劳动，平台同步不重复收人工发送费用。",
+    "costs": {
+      "case_work_capital": 0.5,
+      "communication_cost": 0.2,
+      "decision_cost": 0.1,
+      "inspect_cost": 1.0,
+      "maintenance_cost": 0.1,
+      "project_accept_cost": 0.5,
+      "project_diagnosis_cost": 2.0,
+      "project_proposal_cost": 1.0,
+      "project_step_capital": 3.0,
+      "project_work_cost": 2.0,
+      "recommendation_cost": 0.2,
+      "review_cost": 0.5,
+      "route_cost": 0.5,
+      "setup_cost": 0.5,
+      "work_cost": 1.0
+    },
+    "directory": {
+      "2": "供水及机泵作业、供水专业评审",
+      "3": "基础设施及接口作业、工程专业评审",
+      "4": "专项组织、调查、拟案、预算申请和验收申请"
+    },
+    "evidence_standard": "共同根源拟案须有可核查现场材料；专业意见由部门自主给出，可以错误。预算只审查申请数额、意见是否齐备与当前资金，不认定真实根因。验收另核对真实物理条件。",
+    "ordinary_channel": "普通流程可分别联系、取得反馈、完成协调和源头项目，不丧失法定办理能力。",
+    "project_lag": 2,
+    "project_steps": 2,
+    "project_template": {
+      "construction": [
+        {
+          "department": 3,
+          "predecessor_department": null
+        },
+        {
+          "department": 2,
+          "predecessor_department": 3
+        }
+      ],
+      "note": "Public proposed-plan template only; it does not establish a shared defect or a correct intervention.",
+      "plan": "replace_shared_main",
+      "reviews": [
+        2,
+        3
+      ]
+    },
+    "project_workflow": "专项负责人自愿立项、确认主责、现场调查及拟案；部门2和3作专业评审；负责人收到意见后申请预算；部门执行两个施工分项，按技术前提交接；负责人取得回执后等待技术时滞并申请验收。有依据可撤项，已耗资源不退。",
+    "shared_channel": "联合/专项支持可归集已有授权记录、本人确认及同步执行回执；需要建立和维护成本，不生成专业判断、不保证更新成功或提高物理成功率。"
+  },
+  "resources": {
+    "capital": 17.5,
+    "own_labor": 93.6,
+    "shared_crew_remaining": 2
+  },
+  "role": "专项负责人",
+  "round": 29,
+  "schema_version": "policy-v3-3.0",
+  "sent_messages": [
+    {
+      "created_round": 3,
+      "id": "message-1",
+      "kind": "review_assignment",
+      "object": "P:1",
+      "payload": {
+        "records": [
+          {
+            "author": 4,
+            "created_round": 1,
+            "data": {
+              "owner": 4
+            },
+            "id": "record-2",
+            "kind": "project_lead_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 2,
+            "data": {
+              "evidence": [
+                {
+                  "defect_observed": true,
+                  "facility": "F1-1",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-2",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-3",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                }
+              ]
+            },
+            "id": "record-5",
+            "kind": "project_diagnosis",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 3,
+            "data": {
+              "budget": 6.0,
+              "plan": "replace_shared_main",
+              "revision": 1,
+              "template": {
+                "construction": [
+                  {
+                    "department": 3,
+                    "predecessor_department": null
+                  },
+                  {
+                    "department": 2,
+                    "predecessor_department": 3
+                  }
+                ],
+                "note": "Public proposed-plan template only; it does not establish a shared defect or a correct intervention.",
+                "plan": "replace_shared_main",
+                "reviews": [
+                  2,
+                  3
+                ]
+              }
+            },
+            "id": "record-6",
+            "kind": "proposed_plan",
+            "object": "P:1"
+          }
+        ],
+        "tasks": [
+          {
+            "actor": 2,
+            "id": "J:P:1:1:review_project:2",
+            "kind": "review_project",
+            "object": "P:1",
+            "prerequisites": [],
+            "revision": 1,
+            "scope": "project"
+          },
+          {
+            "actor": 3,
+            "id": "J:P:1:1:review_project:3",
+            "kind": "review_project",
+            "object": "P:1",
+            "prerequisites": [],
+            "revision": 1,
+            "scope": "project"
+          }
+        ]
+      },
+      "recipient": 2
+    },
+    {
+      "created_round": 3,
+      "id": "message-2",
+      "kind": "review_assignment",
+      "object": "P:1",
+      "payload": {
+        "records": [
+          {
+            "author": 4,
+            "created_round": 1,
+            "data": {
+              "owner": 4
+            },
+            "id": "record-2",
+            "kind": "project_lead_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 2,
+            "data": {
+              "evidence": [
+                {
+                  "defect_observed": true,
+                  "facility": "F1-1",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-2",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-3",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                }
+              ]
+            },
+            "id": "record-5",
+            "kind": "project_diagnosis",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 3,
+            "data": {
+              "budget": 6.0,
+              "plan": "replace_shared_main",
+              "revision": 1,
+              "template": {
+                "construction": [
+                  {
+                    "department": 3,
+                    "predecessor_department": null
+                  },
+                  {
+                    "department": 2,
+                    "predecessor_department": 3
+                  }
+                ],
+                "note": "Public proposed-plan template only; it does not establish a shared defect or a correct intervention.",
+                "plan": "replace_shared_main",
+                "reviews": [
+                  2,
+                  3
+                ]
+              }
+            },
+            "id": "record-6",
+            "kind": "proposed_plan",
+            "object": "P:1"
+          }
+        ],
+        "tasks": [
+          {
+            "actor": 2,
+            "id": "J:P:1:1:review_project:2",
+            "kind": "review_project",
+            "object": "P:1",
+            "prerequisites": [],
+            "revision": 1,
+            "scope": "project"
+          },
+          {
+            "actor": 3,
+            "id": "J:P:1:1:review_project:3",
+            "kind": "review_project",
+            "object": "P:1",
+            "prerequisites": [],
+            "revision": 1,
+            "scope": "project"
+          }
+        ]
+      },
+      "recipient": 3
+    },
+    {
+      "created_round": 6,
+      "id": "message-4",
+      "kind": "status_query",
+      "object": "P:1",
+      "payload": {},
+      "recipient": 2
+    },
+    {
+      "created_round": 8,
+      "id": "message-9",
+      "kind": "status_query",
+      "object": "P:1",
+      "payload": {},
+      "recipient": 3
+    },
+    {
+      "created_round": 9,
+      "id": "message-11",
+      "kind": "construction_assignment",
+      "object": "P:1",
+      "payload": {
+        "records": [
+          {
+            "author": 4,
+            "created_round": 1,
+            "data": {
+              "owner": 4
+            },
+            "id": "record-2",
+            "kind": "project_lead_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 2,
+            "data": {
+              "evidence": [
+                {
+                  "defect_observed": true,
+                  "facility": "F1-1",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-2",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-3",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                }
+              ]
+            },
+            "id": "record-5",
+            "kind": "project_diagnosis",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 3,
+            "data": {
+              "budget": 6.0,
+              "plan": "replace_shared_main",
+              "revision": 1,
+              "template": {
+                "construction": [
+                  {
+                    "department": 3,
+                    "predecessor_department": null
+                  },
+                  {
+                    "department": 2,
+                    "predecessor_department": 3
+                  }
+                ],
+                "note": "Public proposed-plan template only; it does not establish a shared defect or a correct intervention.",
+                "plan": "replace_shared_main",
+                "reviews": [
+                  2,
+                  3
+                ]
+              }
+            },
+            "id": "record-6",
+            "kind": "proposed_plan",
+            "object": "P:1"
+          },
+          {
+            "author": 2,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 2,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:2",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-8",
+            "kind": "review_completed",
+            "object": "P:1"
+          },
+          {
+            "author": 3,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 3,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:3",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-9",
+            "kind": "review_completed",
+            "object": "P:1"
+          },
+          {
+            "author": 3,
+            "created_round": 7,
+            "data": {
+              "accepted": true
+            },
+            "id": "record-10",
+            "kind": "project_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 9,
+            "data": {
+              "amount": 6.0,
+              "reserved_resources": false,
+              "revision": 1
+            },
+            "id": "record-11",
+            "kind": "budget_authorization",
+            "object": "P:1"
+          }
+        ],
+        "tasks": [
+          {
+            "actor": 2,
+            "id": "J:P:1:1:implement_project:2",
+            "kind": "implement_project",
+            "object": "P:1",
+            "prerequisites": [
+              "J:P:1:1:implement_project:3"
+            ],
+            "revision": 1,
+            "scope": "project"
+          },
+          {
+            "actor": 3,
+            "id": "J:P:1:1:implement_project:3",
+            "kind": "implement_project",
+            "object": "P:1",
+            "prerequisites": [],
+            "revision": 1,
+            "scope": "project"
+          }
+        ]
+      },
+      "recipient": 2
+    },
+    {
+      "created_round": 9,
+      "id": "message-12",
+      "kind": "construction_assignment",
+      "object": "P:1",
+      "payload": {
+        "records": [
+          {
+            "author": 4,
+            "created_round": 1,
+            "data": {
+              "owner": 4
+            },
+            "id": "record-2",
+            "kind": "project_lead_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 2,
+            "data": {
+              "evidence": [
+                {
+                  "defect_observed": true,
+                  "facility": "F1-1",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-2",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-3",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                }
+              ]
+            },
+            "id": "record-5",
+            "kind": "project_diagnosis",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 3,
+            "data": {
+              "budget": 6.0,
+              "plan": "replace_shared_main",
+              "revision": 1,
+              "template": {
+                "construction": [
+                  {
+                    "department": 3,
+                    "predecessor_department": null
+                  },
+                  {
+                    "department": 2,
+                    "predecessor_department": 3
+                  }
+                ],
+                "note": "Public proposed-plan template only; it does not establish a shared defect or a correct intervention.",
+                "plan": "replace_shared_main",
+                "reviews": [
+                  2,
+                  3
+                ]
+              }
+            },
+            "id": "record-6",
+            "kind": "proposed_plan",
+            "object": "P:1"
+          },
+          {
+            "author": 2,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 2,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:2",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-8",
+            "kind": "review_completed",
+            "object": "P:1"
+          },
+          {
+            "author": 3,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 3,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:3",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-9",
+            "kind": "review_completed",
+            "object": "P:1"
+          },
+          {
+            "author": 3,
+            "created_round": 7,
+            "data": {
+              "accepted": true
+            },
+            "id": "record-10",
+            "kind": "project_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 9,
+            "data": {
+              "amount": 6.0,
+              "reserved_resources": false,
+              "revision": 1
+            },
+            "id": "record-11",
+            "kind": "budget_authorization",
+            "object": "P:1"
+          }
+        ],
+        "tasks": [
+          {
+            "actor": 2,
+            "id": "J:P:1:1:implement_project:2",
+            "kind": "implement_project",
+            "object": "P:1",
+            "prerequisites": [
+              "J:P:1:1:implement_project:3"
+            ],
+            "revision": 1,
+            "scope": "project"
+          },
+          {
+            "actor": 3,
+            "id": "J:P:1:1:implement_project:3",
+            "kind": "implement_project",
+            "object": "P:1",
+            "prerequisites": [],
+            "revision": 1,
+            "scope": "project"
+          }
+        ]
+      },
+      "recipient": 3
+    },
+    {
+      "created_round": 10,
+      "id": "message-15",
+      "kind": "construction_assignment",
+      "object": "P:1",
+      "payload": {
+        "records": [
+          {
+            "author": 4,
+            "created_round": 1,
+            "data": {
+              "owner": 4
+            },
+            "id": "record-2",
+            "kind": "project_lead_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 2,
+            "data": {
+              "evidence": [
+                {
+                  "defect_observed": true,
+                  "facility": "F1-1",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-2",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-3",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                }
+              ]
+            },
+            "id": "record-5",
+            "kind": "project_diagnosis",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 3,
+            "data": {
+              "budget": 6.0,
+              "plan": "replace_shared_main",
+              "revision": 1,
+              "template": {
+                "construction": [
+                  {
+                    "department": 3,
+                    "predecessor_department": null
+                  },
+                  {
+                    "department": 2,
+                    "predecessor_department": 3
+                  }
+                ],
+                "note": "Public proposed-plan template only; it does not establish a shared defect or a correct intervention.",
+                "plan": "replace_shared_main",
+                "reviews": [
+                  2,
+                  3
+                ]
+              }
+            },
+            "id": "record-6",
+            "kind": "proposed_plan",
+            "object": "P:1"
+          },
+          {
+            "author": 2,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 2,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:2",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-8",
+            "kind": "review_completed",
+            "object": "P:1"
+          },
+          {
+            "author": 3,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 3,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:3",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-9",
+            "kind": "review_completed",
+            "object": "P:1"
+          },
+          {
+            "author": 3,
+            "created_round": 7,
+            "data": {
+              "accepted": true
+            },
+            "id": "record-10",
+            "kind": "project_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 9,
+            "data": {
+              "amount": 6.0,
+              "reserved_resources": false,
+              "revision": 1
+            },
+            "id": "record-11",
+            "kind": "budget_authorization",
+            "object": "P:1"
+          }
+        ],
+        "tasks": [
+          {
+            "actor": 2,
+            "id": "J:P:1:1:implement_project:2",
+            "kind": "implement_project",
+            "object": "P:1",
+            "prerequisites": [
+              "J:P:1:1:implement_project:3"
+            ],
+            "revision": 1,
+            "scope": "project"
+          },
+          {
+            "actor": 3,
+            "id": "J:P:1:1:implement_project:3",
+            "kind": "implement_project",
+            "object": "P:1",
+            "prerequisites": [],
+            "revision": 1,
+            "scope": "project"
+          }
+        ]
+      },
+      "recipient": 3
+    },
+    {
+      "created_round": 11,
+      "id": "message-17",
+      "kind": "construction_assignment",
+      "object": "P:1",
+      "payload": {
+        "records": [
+          {
+            "author": 4,
+            "created_round": 1,
+            "data": {
+              "owner": 4
+            },
+            "id": "record-2",
+            "kind": "project_lead_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 2,
+            "data": {
+              "evidence": [
+                {
+                  "defect_observed": true,
+                  "facility": "F1-1",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-2",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-3",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                }
+              ]
+            },
+            "id": "record-5",
+            "kind": "project_diagnosis",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 3,
+            "data": {
+              "budget": 6.0,
+              "plan": "replace_shared_main",
+              "revision": 1,
+              "template": {
+                "construction": [
+                  {
+                    "department": 3,
+                    "predecessor_department": null
+                  },
+                  {
+                    "department": 2,
+                    "predecessor_department": 3
+                  }
+                ],
+                "note": "Public proposed-plan template only; it does not establish a shared defect or a correct intervention.",
+                "plan": "replace_shared_main",
+                "reviews": [
+                  2,
+                  3
+                ]
+              }
+            },
+            "id": "record-6",
+            "kind": "proposed_plan",
+            "object": "P:1"
+          },
+          {
+            "author": 2,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 2,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:2",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-8",
+            "kind": "review_completed",
+            "object": "P:1"
+          },
+          {
+            "author": 3,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 3,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:3",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-9",
+            "kind": "review_completed",
+            "object": "P:1"
+          },
+          {
+            "author": 3,
+            "created_round": 7,
+            "data": {
+              "accepted": true
+            },
+            "id": "record-10",
+            "kind": "project_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 9,
+            "data": {
+              "amount": 6.0,
+              "reserved_resources": false,
+              "revision": 1
+            },
+            "id": "record-11",
+            "kind": "budget_authorization",
+            "object": "P:1"
+          }
+        ],
+        "tasks": [
+          {
+            "actor": 2,
+            "id": "J:P:1:1:implement_project:2",
+            "kind": "implement_project",
+            "object": "P:1",
+            "prerequisites": [
+              "J:P:1:1:implement_project:3"
+            ],
+            "revision": 1,
+            "scope": "project"
+          },
+          {
+            "actor": 3,
+            "id": "J:P:1:1:implement_project:3",
+            "kind": "implement_project",
+            "object": "P:1",
+            "prerequisites": [],
+            "revision": 1,
+            "scope": "project"
+          }
+        ]
+      },
+      "recipient": 2
+    },
+    {
+      "created_round": 20,
+      "id": "message-19",
+      "kind": "status_reply",
+      "object": "P:1",
+      "payload": {
+        "records": [
+          {
+            "author": 4,
+            "created_round": 1,
+            "data": {
+              "owner": 4
+            },
+            "id": "record-2",
+            "kind": "project_lead_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 2,
+            "data": {
+              "evidence": [
+                {
+                  "defect_observed": true,
+                  "facility": "F1-1",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-2",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-3",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                }
+              ]
+            },
+            "id": "record-5",
+            "kind": "project_diagnosis",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 3,
+            "data": {
+              "budget": 6.0,
+              "plan": "replace_shared_main",
+              "revision": 1,
+              "template": {
+                "construction": [
+                  {
+                    "department": 3,
+                    "predecessor_department": null
+                  },
+                  {
+                    "department": 2,
+                    "predecessor_department": 3
+                  }
+                ],
+                "note": "Public proposed-plan template only; it does not establish a shared defect or a correct intervention.",
+                "plan": "replace_shared_main",
+                "reviews": [
+                  2,
+                  3
+                ]
+              }
+            },
+            "id": "record-6",
+            "kind": "proposed_plan",
+            "object": "P:1"
+          },
+          {
+            "author": 2,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 2,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:2",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-8",
+            "kind": "review_completed",
+            "object": "P:1"
+          },
+          {
+            "author": 3,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 3,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:3",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-9",
+            "kind": "review_completed",
+            "object": "P:1"
+          },
+          {
+            "author": 3,
+            "created_round": 7,
+            "data": {
+              "accepted": true
+            },
+            "id": "record-10",
+            "kind": "project_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 9,
+            "data": {
+              "amount": 6.0,
+              "reserved_resources": false,
+              "revision": 1
+            },
+            "id": "record-11",
+            "kind": "budget_authorization",
+            "object": "P:1"
+          }
+        ]
+      },
+      "recipient": 2
+    },
+    {
+      "created_round": 21,
+      "id": "message-20",
+      "kind": "construction_assignment",
+      "object": "P:1",
+      "payload": {
+        "records": [
+          {
+            "author": 4,
+            "created_round": 1,
+            "data": {
+              "owner": 4
+            },
+            "id": "record-2",
+            "kind": "project_lead_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 2,
+            "data": {
+              "evidence": [
+                {
+                  "defect_observed": true,
+                  "facility": "F1-1",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-2",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-3",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                }
+              ]
+            },
+            "id": "record-5",
+            "kind": "project_diagnosis",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 3,
+            "data": {
+              "budget": 6.0,
+              "plan": "replace_shared_main",
+              "revision": 1,
+              "template": {
+                "construction": [
+                  {
+                    "department": 3,
+                    "predecessor_department": null
+                  },
+                  {
+                    "department": 2,
+                    "predecessor_department": 3
+                  }
+                ],
+                "note": "Public proposed-plan template only; it does not establish a shared defect or a correct intervention.",
+                "plan": "replace_shared_main",
+                "reviews": [
+                  2,
+                  3
+                ]
+              }
+            },
+            "id": "record-6",
+            "kind": "proposed_plan",
+            "object": "P:1"
+          },
+          {
+            "author": 2,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 2,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:2",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-8",
+            "kind": "review_completed",
+            "object": "P:1"
+          },
+          {
+            "author": 3,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 3,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:3",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-9",
+            "kind": "review_completed",
+            "object": "P:1"
+          },
+          {
+            "author": 3,
+            "created_round": 7,
+            "data": {
+              "accepted": true
+            },
+            "id": "record-10",
+            "kind": "project_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 9,
+            "data": {
+              "amount": 6.0,
+              "reserved_resources": false,
+              "revision": 1
+            },
+            "id": "record-11",
+            "kind": "budget_authorization",
+            "object": "P:1"
+          }
+        ],
+        "tasks": [
+          {
+            "actor": 2,
+            "id": "J:P:1:1:implement_project:2",
+            "kind": "implement_project",
+            "object": "P:1",
+            "prerequisites": [
+              "J:P:1:1:implement_project:3"
+            ],
+            "revision": 1,
+            "scope": "project"
+          },
+          {
+            "actor": 3,
+            "id": "J:P:1:1:implement_project:3",
+            "kind": "implement_project",
+            "object": "P:1",
+            "prerequisites": [],
+            "revision": 1,
+            "scope": "project"
+          }
+        ]
+      },
+      "recipient": 3
+    },
+    {
+      "created_round": 27,
+      "id": "message-23",
+      "kind": "status_reply",
+      "object": "P:1",
+      "payload": {
+        "records": [
+          {
+            "author": 4,
+            "created_round": 1,
+            "data": {
+              "owner": 4
+            },
+            "id": "record-2",
+            "kind": "project_lead_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 2,
+            "data": {
+              "evidence": [
+                {
+                  "defect_observed": true,
+                  "facility": "F1-1",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-2",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-3",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                }
+              ]
+            },
+            "id": "record-5",
+            "kind": "project_diagnosis",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 3,
+            "data": {
+              "budget": 6.0,
+              "plan": "replace_shared_main",
+              "revision": 1,
+              "template": {
+                "construction": [
+                  {
+                    "department": 3,
+                    "predecessor_department": null
+                  },
+                  {
+                    "department": 2,
+                    "predecessor_department": 3
+                  }
+                ],
+                "note": "Public proposed-plan template only; it does not establish a shared defect or a correct intervention.",
+                "plan": "replace_shared_main",
+                "reviews": [
+                  2,
+                  3
+                ]
+              }
+            },
+            "id": "record-6",
+            "kind": "proposed_plan",
+            "object": "P:1"
+          },
+          {
+            "author": 2,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 2,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:2",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-8",
+            "kind": "review_completed",
+            "object": "P:1"
+          },
+          {
+            "author": 3,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 3,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:3",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-9",
+            "kind": "review_completed",
+            "object": "P:1"
+          },
+          {
+            "author": 3,
+            "created_round": 7,
+            "data": {
+              "accepted": true
+            },
+            "id": "record-10",
+            "kind": "project_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 9,
+            "data": {
+              "amount": 6.0,
+              "reserved_resources": false,
+              "revision": 1
+            },
+            "id": "record-11",
+            "kind": "budget_authorization",
+            "object": "P:1"
+          }
+        ]
+      },
+      "recipient": 2
+    },
+    {
+      "created_round": 28,
+      "id": "message-26",
+      "kind": "construction_assignment",
+      "object": "P:1",
+      "payload": {
+        "records": [
+          {
+            "author": 4,
+            "created_round": 1,
+            "data": {
+              "owner": 4
+            },
+            "id": "record-2",
+            "kind": "project_lead_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 2,
+            "data": {
+              "evidence": [
+                {
+                  "defect_observed": true,
+                  "facility": "F1-1",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-2",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                },
+                {
+                  "defect_observed": true,
+                  "facility": "F1-3",
+                  "method": "现场管线溯源",
+                  "observed_asset": "勘察资产-61480bb9"
+                }
+              ]
+            },
+            "id": "record-5",
+            "kind": "project_diagnosis",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 3,
+            "data": {
+              "budget": 6.0,
+              "plan": "replace_shared_main",
+              "revision": 1,
+              "template": {
+                "construction": [
+                  {
+                    "department": 3,
+                    "predecessor_department": null
+                  },
+                  {
+                    "department": 2,
+                    "predecessor_department": 3
+                  }
+                ],
+                "note": "Public proposed-plan template only; it does not establish a shared defect or a correct intervention.",
+                "plan": "replace_shared_main",
+                "reviews": [
+                  2,
+                  3
+                ]
+              }
+            },
+            "id": "record-6",
+            "kind": "proposed_plan",
+            "object": "P:1"
+          },
+          {
+            "author": 2,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 2,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:2",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-8",
+            "kind": "review_completed",
+            "object": "P:1"
+          },
+          {
+            "author": 3,
+            "created_round": 4,
+            "data": {
+              "capital_spent": 0,
+              "task": {
+                "actor": 3,
+                "as_of_round": 4,
+                "completed_round": 4,
+                "id": "J:P:1:1:review_project:3",
+                "kind": "review_project",
+                "object": "P:1",
+                "opinion": "approve",
+                "prerequisites": [],
+                "revision": 1,
+                "scope": "project",
+                "state": "completed"
+              }
+            },
+            "id": "record-9",
+            "kind": "review_completed",
+            "object": "P:1"
+          },
+          {
+            "author": 3,
+            "created_round": 7,
+            "data": {
+              "accepted": true
+            },
+            "id": "record-10",
+            "kind": "project_confirmation",
+            "object": "P:1"
+          },
+          {
+            "author": 4,
+            "created_round": 9,
+            "data": {
+              "amount": 6.0,
+              "reserved_resources": false,
+              "revision": 1
+            },
+            "id": "record-11",
+            "kind": "budget_authorization",
+            "object": "P:1"
+          }
+        ],
+        "tasks": [
+          {
+            "actor": 2,
+            "id": "J:P:1:1:implement_project:2",
+            "kind": "implement_project",
+            "object": "P:1",
+            "prerequisites": [
+              "J:P:1:1:implement_project:3"
+            ],
+            "revision": 1,
+            "scope": "project"
+          },
+          {
+            "actor": 3,
+            "id": "J:P:1:1:implement_project:3",
+            "kind": "implement_project",
+            "object": "P:1",
+            "prerequisites": [],
+            "revision": 1,
+            "scope": "project"
+          }
+        ]
+      },
+      "recipient": 3
+    }
+  ],
+  "spec_version": "policy-v3-3.0",
+  "topics": [
+    {
+      "c_offered": false,
+      "category": "供水服务异常",
+      "district": "片区1",
+      "eligible": false,
+      "facilities": [
+        "F1-1",
+        "F1-2",
+        "F1-3"
+      ],
+      "id": "片区1|供水服务异常",
+      "opportunity": "C:片区1|供水服务异常@0",
+      "record_count": 3
+    },
+    {
+      "c_offered": true,
+      "category": "供水服务异常",
+      "district": "片区2",
+      "eligible": true,
+      "facilities": [
+        "F2-1",
+        "F2-2",
+        "F2-3"
+      ],
+      "id": "片区2|供水服务异常",
+      "opportunity": "C:片区2|供水服务异常@0",
+      "record_count": 3
+    },
+    {
+      "c_offered": true,
+      "category": "供水服务异常",
+      "district": "片区3",
+      "eligible": true,
+      "facilities": [
+        "F3-1",
+        "F3-2",
+        "F3-3"
+      ],
+      "id": "片区3|供水服务异常",
+      "opportunity": "C:片区3|供水服务异常@0",
+      "record_count": 3
+    },
+    {
+      "c_offered": true,
+      "category": "供水服务异常",
+      "district": "片区4",
+      "eligible": true,
+      "facilities": [
+        "F4-1",
+        "F4-2",
+        "F4-3"
+      ],
+      "id": "片区4|供水服务异常",
+      "opportunity": "C:片区4|供水服务异常@0",
+      "record_count": 3
+    }
+  ],
+  "visible_tickets": [
+    {
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区1",
+      "facility": "F1-1",
+      "id": "T:F1-1:0",
+      "lead": 3,
+      "public_episode": "居民记录:F1-1:0",
+      "reported": 0,
+      "text": "用水服务异常，附近情况不明，请有关单位核实处理"
+    },
+    {
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区1",
+      "facility": "F1-2",
+      "id": "T:F1-2:0",
+      "lead": 3,
+      "public_episode": "居民记录:F1-2:0",
+      "reported": 0,
+      "text": "用水服务异常，附近情况不明，请有关单位核实处理"
+    },
+    {
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区1",
+      "facility": "F1-3",
+      "id": "T:F1-3:0",
+      "lead": 3,
+      "public_episode": "居民记录:F1-3:0",
+      "reported": 0,
+      "text": "用水服务异常，附近情况不明，请有关单位核实处理"
+    },
+    {
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区2",
+      "facility": "F2-1",
+      "id": "T:F2-1:0",
+      "lead": 3,
+      "public_episode": "居民记录:F2-1:0",
+      "reported": 0,
+      "text": "供水泵及基础接口均需核实处理"
+    },
+    {
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区2",
+      "facility": "F2-2",
+      "id": "T:F2-2:0",
+      "lead": 3,
+      "public_episode": "居民记录:F2-2:0",
+      "reported": 0,
+      "text": "供水泵及基础接口均需核实处理"
+    },
+    {
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区2",
+      "facility": "F2-3",
+      "id": "T:F2-3:0",
+      "lead": 3,
+      "public_episode": "居民记录:F2-3:0",
+      "reported": 0,
+      "text": "供水泵及基础接口均需核实处理"
+    },
+    {
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区3",
+      "facility": "F3-1",
+      "id": "T:F3-1:0",
+      "lead": 3,
+      "public_episode": "居民记录:F3-1:0",
+      "reported": 0,
+      "text": "供水泵及基础接口均需核实处理"
+    },
+    {
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区3",
+      "facility": "F3-2",
+      "id": "T:F3-2:0",
+      "lead": 3,
+      "public_episode": "居民记录:F3-2:0",
+      "reported": 0,
+      "text": "供水泵及基础接口均需核实处理"
+    },
+    {
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区3",
+      "facility": "F3-3",
+      "id": "T:F3-3:0",
+      "lead": 3,
+      "public_episode": "居民记录:F3-3:0",
+      "reported": 0,
+      "text": "用水服务异常，附近情况不明，请有关单位核实处理"
+    },
+    {
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区4",
+      "facility": "F4-1",
+      "id": "T:F4-1:0",
+      "lead": 3,
+      "public_episode": "居民记录:F4-1:0",
+      "reported": 0,
+      "text": "基础设施接口破损影响供水"
+    },
+    {
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区4",
+      "facility": "F4-2",
+      "id": "T:F4-2:0",
+      "lead": 3,
+      "public_episode": "居民记录:F4-2:0",
+      "reported": 0,
+      "text": "用水服务异常，附近情况不明，请有关单位核实处理"
+    },
+    {
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区4",
+      "facility": "F4-3",
+      "id": "T:F4-3:0",
+      "lead": 3,
+      "public_episode": "居民记录:F4-3:0",
+      "reported": 0,
+      "text": "用水服务异常，附近情况不明，请有关单位核实处理"
+    },
+    {
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区4",
+      "facility": "F4-1",
+      "id": "T:F4-1:6",
+      "lead": 3,
+      "public_episode": "居民记录:F4-1:6",
+      "reported": 6,
+      "text": "基础设施接口破损影响供水"
+    }
+  ],
+  "zero_communication_friction": false
+}

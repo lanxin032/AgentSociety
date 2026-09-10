@@ -1,0 +1,47 @@
+[
+  {
+    "round": 5,
+    "action": {
+      "kind": "wait",
+      "target": null,
+      "params": {},
+      "reason": "我已于第4轮完成对项目P:1的专业评审并批准，目前另一评审部门（部门3）的任务仍为pending状态，需等待其完成评审后才能进入下一步施工流程。当前无其他可执行任务，故选择等待。"
+    },
+    "receipt": {
+      "actor_id": 2,
+      "round": 5,
+      "status": "queued",
+      "code": "accepted_for_settlement"
+    }
+  },
+  {
+    "round": 6,
+    "action": {
+      "kind": "reply_status",
+      "target": "message-3",
+      "params": {},
+      "reason": "部门3在第5轮发来状态查询，我已于第4轮完成评审并批准，目前等待部门3完成其评审；回复可告知当前进度，促进协调。"
+    },
+    "receipt": {
+      "actor_id": 2,
+      "round": 6,
+      "status": "queued",
+      "code": "accepted_for_settlement"
+    }
+  },
+  {
+    "round": 7,
+    "action": {
+      "kind": "reply_status",
+      "target": "message-4",
+      "params": {},
+      "reason": "部门4在第6轮发来状态查询，我已于第4轮完成评审并批准，目前等待部门3完成其评审；回复可告知当前进度，促进协调。"
+    },
+    "receipt": {
+      "actor_id": 2,
+      "round": 7,
+      "status": "queued",
+      "code": "accepted_for_settlement"
+    }
+  }
+]

@@ -1,0 +1,70 @@
+{
+  "schema_version": "policy-v3-design-1.0",
+  "implementation_version": "policy-v3-3.1",
+  "purpose": "synthetic_mechanism_experiment",
+  "initial_issues": 12,
+  "actors": 4,
+  "n_candidates": [
+    8,
+    10,
+    12
+  ],
+  "static": {
+    "horizon": 60,
+    "grid_levels": [
+      0,
+      0.5,
+      1
+    ],
+    "full_grid": 27,
+    "axis_extra_levels": [
+      0.25,
+      0.75
+    ],
+    "axis_extra_points": 6,
+    "total_scenarios": 33
+  },
+  "order": {
+    "phase_length": 20,
+    "common_final_all_on": 30,
+    "horizon": 90,
+    "cumulative": "Successive adoption remains on; simultaneous reference q=2/3 each in [0,60), then all q=1. Total dose 210 matches, individual-tool doses do not match each ordering.",
+    "equal": "One tool at a time for 20 rounds, then all on for 30; simultaneous reference q=1/3 in [0,60), then all on. Each tool dose is 50 in every scenario.",
+    "ongoing_projects": "Provision windows govern new offers; do not terminate adopted project processes when a window changes.",
+    "groups": 14
+  },
+  "pilot_precision": {
+    "seeds": [
+      2001,
+      2002,
+      2003,
+      2004
+    ],
+    "runs": 32,
+    "target": "Seven endpoint-minus-000 paired mean normalized-burden differences",
+    "metric": "cumulative_issue_burden/(12*horizon)",
+    "variance_upper_confidence": 0.9,
+    "variance_df": 3,
+    "pointwise_ci_confidence": 0.95,
+    "target_half_width": 0.1,
+    "minimum_blocks": 8,
+    "maximum_blocks": 12,
+    "not_guaranteed": "Four pilot seeds only; static endpoint variance does not establish precision for strength, interactions or order contrasts."
+  },
+  "inference": {
+    "unit": "whole simulation",
+    "pairing": "exogenous seed within family",
+    "model_sampling": "Independent model draws, no claim of provider seed reproducibility",
+    "missing": "Complete paired contrasts plus worst-case normalized-burden bounds over all planned blocks",
+    "multiplicity": "Holm within prespecified contrast families; confidence intervals remain pointwise",
+    "rq1_primary": "Seven non000-versus-000 endpoint contrasts plus six pairwise tool interactions conditional on the third tool being 0 or 1 (13 primary contrasts).",
+    "rq1_exploratory": "Seven marginal factorial contrasts are separate exploratory hypotheses, not substitutes for the six conditional interactions.",
+    "order_windows": "Report both the complete 90 rounds and the final 30-round common all-on window; adjust both windows within each order family's prespecified tests.",
+    "reporting_scale": "Report original U differences and CIs in unresolved-Issue-rounds alongside normalized differences; scaling denominator is 12H for each outcome window.",
+    "zero_variance": "Report zero sample MCSE and degenerate t interval descriptively; t p-value undefined",
+    "sensitivity": "Pairs reuse first six static seeds and baseline endpoint results; sensitivity is not independent confirmation of the main study.",
+    "valid_data": "Only complete verified real-model records enter formal inference. Offline/scripted records are test-only."
+  },
+  "authorization": "Design generation and sample-size planning never execute runs or change API controls. Formal stages remain awaiting_pilot_freeze until an explicit separate freeze/authorization step.",
+  "counts_formula": "6+32+33*N+14*N+4*N+8*4*6 = 51*N+230; plus eight technical reruns, maximum 850 at N=12"
+}

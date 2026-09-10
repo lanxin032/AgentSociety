@@ -1,0 +1,365 @@
+{
+  "status": "proposal_not_implemented",
+  "version": "v3-state-transition-proposal-20260910.1",
+  "scope": "Read-only-derived candidate specification; no runtime changes or simulated results.",
+  "recommendation": "Separate construction, technical commissioning and administrative acceptance; explicit commission_project action.",
+  "source_namespace": "S02/S03 refer to research/case_cards_202209_awards_20260909/case_cards.json, not policy_mapping sources with the same IDs.",
+  "states": {
+    "construction": {
+      "values": [
+        "not_started",
+        "in_progress",
+        "built"
+      ],
+      "built_at": "last required construction task completion round; immutable"
+    },
+    "physical": {
+      "values": [
+        "not_commissioned",
+        "effective",
+        "commissioning_failed"
+      ],
+      "effective_at": "boundary after successful commission_project settlement, before next external shock",
+      "assessment": "project-specific commissioning assessment preserves whether this intervention matched; do not test not root_repaired again at administrative acceptance"
+    },
+    "administrative": {
+      "values": [
+        "open",
+        "awaiting_evidence",
+        "accepted",
+        "cancelled"
+      ],
+      "accepted_at": "owner acceptance action settlement; no physical transition"
+    },
+    "orthogonal": {
+      "paused": "blocks future construction/commission actions; does not undo effective physical state",
+      "cancelled_at": "terminates future tasks, no refunds or rollback",
+      "actor_knowledge": "own actions and delivered lawful records only; physical ground truth remains audit-only"
+    }
+  },
+  "transitions": [
+    {
+      "id": "build",
+      "old": "two construction tasks set physical_ready_round only",
+      "proposed": "set construction=built and built_at; remain not_commissioned",
+      "actor": [
+        2,
+        3
+      ],
+      "legal_knowledge": "assigned task and received prerequisite completion evidence",
+      "objective_conditions": "both real construction tasks completed for this revision",
+      "resources": "existing work costs unchanged",
+      "messages": "own completion records; ordinary explicit reports or activated shared delivery",
+      "metrics": [
+        "construction_completed_at"
+      ],
+      "failure": "missing receipt or resources rejects action; no phantom work"
+    },
+    {
+      "id": "commission",
+      "old": "accept_project conflates physical assessment and administrative acceptance",
+      "proposed": "commission_project executes a synthetic technical flushing/testing/switching package; no new role",
+      "actor": 2,
+      "actor_basis": "recommended synthetic responsibility; not a claim about case-law or reported exact operator",
+      "assignment": "At budget approval create the same commissioning task definition inside the environment for both modes, with both construction tasks as prerequisites. Global creation grants no observation, assignment or authorization to role2. Ordinary delivery uses the existing construction-assignment channel with commissioning responsibility included in its package; structured delivery may aggregate that package through its existing lawful channel. Role2 can see and execute only after lawful assignment and prerequisite evidence delivery. No new request action or role; no policy-label access to hidden progress.",
+      "legal_knowledge": "own assignment, current authorization and both received construction receipts; no hidden cause supplied",
+      "objective_conditions": "both construction tasks really complete, current round >= last completion round + existing project_lag, project not paused/cancelled; engineering matches actual shared defect",
+      "resources": {
+        "technical_labor": "move old project_accept_cost=0.5 from owner4 to role2; provisional synthetic reallocation",
+        "capital": 0,
+        "crew": 0,
+        "decision_labor": "existing 0.1 per action retained; one extra administrative action means +0.1 decision labor relative to old full chain",
+        "qualification": "zero added capital/crew is a minimal abstraction, not an empirical estimate; do not claim total burden unchanged"
+      },
+      "messages": "commissioning_result to performer; owner learns only through a lawful delivered record, whether ordinary reporting, activated structured synchronization, or zero-friction passive sharing. Lack of a manual report does not imply lack of knowledge. Preserve each channel's existing timing, costs and eligibility, including immediate zero-friction sharing.",
+      "metrics": [
+        "commission_attempts",
+        "commission_result",
+        "physical_effective_at",
+        "technical_labor"
+      ],
+      "failure": "wrong engineering consumes attempted technical labor but never changes root risk; resource/receipt failures do not count as physical mismatch; no automatic retries"
+    },
+    {
+      "id": "accept",
+      "old": "owner gets construction receipts, pays0.5, changes root_repaired and terminates project",
+      "proposed": "accept_project confirms a delivered successful commissioning result plus existing review/budget/construction documentation; administrative state only",
+      "actor": 4,
+      "legal_knowledge": "lawfully received records only; no inspection of private physical flag",
+      "objective_conditions": "valid project-specific successful commissioning record; source identity/revision consistent",
+      "resources": "decision_cost=0.1; no second technical 0.5 charge",
+      "messages": "administrative_acceptance record follows normal delivery rules",
+      "metrics": [
+        "administrative_accepted_at",
+        "physical_to_acceptance_delay_or_censor"
+      ],
+      "failure": "missing evidence => business rejection/awaiting_evidence, not physical failure; no invented independent administrative-failure probability"
+    },
+    {
+      "id": "pause_cancel",
+      "old": "terminate_project cancelled pending tasks and no refund",
+      "proposed": "preserve termination of future tasks and no refund; never revert built/effective history or physical repair",
+      "actor": 4,
+      "legal_knowledge": "existing recorded cancellation basis; no hidden defect oracle",
+      "objective_conditions": "before commissioning cancels remaining commission task; after effective only closes administrative workflow",
+      "resources": "existing decision cost and sunk costs retained",
+      "messages": "pause/cancel records delivered normally; task menus follow received state",
+      "metrics": [
+        "cancelled_at",
+        "physical_effective_but_cancelled"
+      ],
+      "failure": "decommissioning/removal not modeled; would require explicit new action/physical mechanism"
+    }
+  ],
+  "invariants": [
+    "Ordinary and structured projects use identical construction, commissioning, matching, resources and timing conditions; B does not alter project rules.",
+    "Built is necessary but insufficient for physical effectiveness; administrative acceptance is not necessary for physical effectiveness.",
+    "Administrative accepted implies prior successful physical commissioning; administrative cancelled may coexist with effective.",
+    "Wrong plans cannot become effective merely because professionals approved or documents were complete.",
+    "Commission result must preserve project-specific matching; root_repaired already true after success must not cause later administrative failure.",
+    "No message is delivered retroactively; actual effect and lawful actor knowledge may differ.",
+    "Existing unresolved local damage remains open; only its own required case work resolves it. Effective root repair changes future eligible recurrence risk, not old episodes.",
+    "Apply physical effect at a fixed settlement boundary before the next external shock; no retroactive risk edits.",
+    "Existing lag is a provisional readiness interval before commissioning; do not also add the same lag after commissioning.",
+    "No clinical/engineering calibration claimed; dates in reports do not calibrate synthetic rounds.",
+    "An active administrative project blocks duplicate same-topic commissioning; after termination use existing cooldown and audit duplicate attempts rather than hidden-state candidate filtering."
+  ],
+  "acceptance_cases": [
+    {
+      "id": "built_no_commission",
+      "status": "specified_not_run",
+      "initial": {
+        "construction": "built",
+        "physical": "not_commissioned",
+        "round": 14
+      },
+      "trigger": "advance with all wait",
+      "expected": {
+        "physical": "not_commissioned",
+        "administrative": "open"
+      },
+      "objective_vs_known": "No observer is told effective; engineering remains built."
+    },
+    {
+      "id": "commission_not_reported",
+      "status": "specified_not_run",
+      "initial": {
+        "construction": "built",
+        "matching": true,
+        "actor2_has_all_receipts": true,
+        "lag_elapsed": true,
+        "mode": "conventional",
+        "zero_communication_friction": false,
+        "owner_received_result_via_any_lawful_channel": false
+      },
+      "trigger": "actor2 commission_project succeeds; inspect after its successful settlement and physical-effect boundary, before owner4 receives the result through any lawful channel; no other lawful delivery has occurred",
+      "expected": {
+        "physical": "effective",
+        "administrative": "open",
+        "owner_knows_effective": false
+      },
+      "objective_vs_known": "In this conventional nonzero-friction case the environment lowers next eligible shock risk and actor2 holds the result, while owner4 has received none by the inspected time. This expectation does not apply after activated shared delivery or zero-friction passive sharing; those channels must update owner knowledge when their lawful delivery occurs."
+    },
+    {
+      "id": "late_admin",
+      "status": "specified_not_run",
+      "initial": {
+        "physical": "effective",
+        "owner_has_success_record": false
+      },
+      "trigger": "owner attempts acceptance; later receives record and tries again",
+      "expected": {
+        "first": "missing_evidence",
+        "second": "accepted",
+        "physical_rollback": false
+      },
+      "objective_vs_known": "Missing lawful knowledge blocks administrative acceptance only."
+    },
+    {
+      "id": "wrong_plan",
+      "status": "specified_not_run",
+      "initial": {
+        "construction": "built",
+        "matching": false,
+        "approvals": [
+          2,
+          3
+        ],
+        "receipts_received": true
+      },
+      "trigger": "attempt commission_project",
+      "expected": {
+        "physical": "commissioning_failed",
+        "risk_changed": false,
+        "technical_cost_consumed": true,
+        "refund": 0
+      },
+      "objective_vs_known": "Performer receives technical failure result, other roles only upon delivery."
+    },
+    {
+      "id": "cancel_before",
+      "status": "specified_not_run",
+      "initial": {
+        "construction": "built",
+        "physical": "not_commissioned",
+        "cancellation_basis_recorded": true
+      },
+      "trigger": "owner cancels before commission settles",
+      "expected": {
+        "future_commission": "blocked",
+        "physical": "not_commissioned",
+        "refund": 0
+      },
+      "objective_vs_known": "Other actors keep old view until receipt; attempted stale action rejects without physical work."
+    },
+    {
+      "id": "cancel_after",
+      "status": "specified_not_run",
+      "initial": {
+        "construction": "built",
+        "physical": "effective",
+        "cancellation_basis_recorded": true
+      },
+      "trigger": "owner ends administrative workflow",
+      "expected": {
+        "administrative": "cancelled",
+        "physical": "effective",
+        "refund": 0
+      },
+      "objective_vs_known": "Cancellation cannot undo operating infrastructure; no hidden rollback."
+    },
+    {
+      "id": "same_physics_both_modes",
+      "status": "specified_not_run",
+      "initial": {
+        "modes": [
+          "conventional",
+          "structured"
+        ],
+        "same_received_evidence": true,
+        "same_resources": true,
+        "same_physical_state": true
+      },
+      "trigger": "same commission action and fixed shock draw",
+      "expected": {
+        "same_physical_result": true,
+        "same_technical_cost": true
+      },
+      "objective_vs_known": "Service only changes how evidence became available, not the physical gate."
+    },
+    {
+      "id": "stock_vs_recurrence",
+      "status": "specified_not_run",
+      "initial": {
+        "physical": "effective",
+        "existing_issue_unresolved": true
+      },
+      "trigger": "next shock and later lawful local task completion",
+      "expected": {
+        "old_issue_not_auto_resolved": true,
+        "no_overlapping_episode": true,
+        "future_risk": "repaired risk after old issue resolved"
+      },
+      "objective_vs_known": "Actor knowledge of repair does not select environment risk."
+    },
+    {
+      "id": "invalid_combination",
+      "status": "specified_not_run",
+      "initial": {
+        "construction": "in_progress",
+        "physical": "not_commissioned"
+      },
+      "trigger": "attempt accept_project or commission_project",
+      "expected": {
+        "no_effect": true,
+        "no_admin_acceptance": true
+      },
+      "objective_vs_known": "Do not reveal hidden matching through candidate filtering."
+    },
+    {
+      "id": "boundary",
+      "status": "specified_not_run",
+      "initial": {
+        "last_construction_round": 12,
+        "project_lag": 2,
+        "all_receipts_received": true
+      },
+      "trigger": "commission attempts round13 then14",
+      "expected": {
+        "round13": "too_early",
+        "round14": "may_succeed",
+        "effect_boundary": 15,
+        "no_retroactive_shock_edit": true
+      },
+      "objective_vs_known": "Readiness is derived from legitimate task receipts; actual gate agrees."
+    },
+    {
+      "id": "already_repaired_accept",
+      "status": "specified_not_run",
+      "initial": {
+        "physical": "effective",
+        "root_repaired": true,
+        "own_project_success_record": true
+      },
+      "trigger": "accept_project",
+      "expected": {
+        "administrative": "accepted",
+        "physical": "effective"
+      },
+      "objective_vs_known": "Administrative verification uses the project result, not a fresh not-root_repaired predicate."
+    }
+  ],
+  "open_decisions": [
+    {
+      "id": "operator",
+      "question": "Use role2 as technical commissioning actor?",
+      "default_recommendation": "Yes, synthetic responsibility within existing four roles; owner4 remains organizer.",
+      "required_before_implementation": true
+    },
+    {
+      "id": "cost_time",
+      "question": "Accept minimal cost transfer and readiness timing?",
+      "default_recommendation": "Transfer old0.5 technical labor to role2; owner acceptance only existing0.1 decision cost; retain readiness lag2 as uncalibrated assumption; disclose extra decision action and changed labor bearer.",
+      "required_before_implementation": true
+    },
+    {
+      "id": "old_issue_boundary",
+      "question": "Keep source repair separate from existing local-damage resolution?",
+      "default_recommendation": "Yes for minimal revision; explicitly acknowledge this is a task abstraction and case report does not establish it for every household.",
+      "required_before_implementation": true
+    }
+  ],
+  "sources": [
+    {
+      "id": "case:S03",
+      "title": "丰台区明春苑小区通上市政“幸福水”",
+      "url": "https://www.beijing.gov.cn/renwen/sy/whkb/202108/t20210831_2481049.html",
+      "published": "2021-08-31",
+      "locator": "末段，据悉开头；web rendered line56; case_cards.json source S03",
+      "supported_fact": "Reports external pipeline built on2021-08-10 and put into use on2021-08-30.",
+      "does_not_support": "20 days = 2 simulation rounds; administrative receipt causes physical effect; exact synthetic operator/cost"
+    },
+    {
+      "id": "case:S02",
+      "title": "接诉即办，他们这么干（水务部分）",
+      "url": "https://www.bjft.gov.cn/fengtaishibao/html/2022-08/22/content_9501_15189379.htm",
+      "published": "2022-08-22",
+      "locator": "03版，丰台区水务局，主要做法3末段；web rendered line54; case_cards.json source S02",
+      "supported_fact": "Describes scheduling and accelerating flushing of built pipes, and changing household sequence to water supply before renovation.",
+      "does_not_support": "Every construction task must universally precede supply; exact task graph, role2 assignment, cost or mandatory administrative gate"
+    },
+    {
+      "id": "current_code",
+      "path": "policy_v3/core.py",
+      "locator": "853 readiness;991-1016 acceptance and physical flag;1055 recurrence-risk switch",
+      "supported_fact": "Current implementation conflates physical effect with owner acceptance."
+    },
+    {
+      "id": "actual_001",
+      "path": "research/v3_20260909/diagnostic_first_C_review.md",
+      "locator": "38;44-54",
+      "supported_fact": "Built tasks round10/12, readiness14; owner lacks completion receipts; historical run remains unchanged.",
+      "does_not_support": "Any proposed version has already been executed"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "status": "complete_single_canonical_source",
+  "canonical_source_root": "D:\\AgentSociety",
+  "duplicate_directory": "D:\\AgentSociety\\variants\\v3_1_20260910",
+  "original_base_source_sha256": "8530b5271468bd93c8ee71cbde8b1206d6c926a22cf7e2948d00fa2f6ef87e9c",
+  "changes": [
+    {
+      "path": "policy_v3/core.py",
+      "sha256": "7b3ff1b112b6a21d4ff4b6e2163db3de2e42f1632809c1d50f811ee4780055fa"
+    },
+    {
+      "path": "policy_v3/interface.py",
+      "sha256": "ea0e46f182ef1dc1e119042f1100051589e84a8a0c279c96c5c467130948f51f"
+    },
+    {
+      "path": "policy_v3/llm.py",
+      "sha256": "5eef67eb3f7ff0dd20d6a74159700d303adedeaeda274b87d53e9c4ba187e6d9"
+    },
+    {
+      "path": "policy_v3/spec.py",
+      "sha256": "45d2ccf9755dd27f04b36ea9f90cc6c259a34a9701b0866edd0f4fd945087b7d"
+    }
+  ],
+  "unchanged_duplicate_files": 76,
+  "api_calls": 0,
+  "note": "User requested one maintained source tree; no new complete source backup was created. Historical run data and manifests remain.",
+  "duplicate_directory_removed": true,
+  "current_source_sha256": "47efaaa4dbeb00c5ee38b814bebaecfc6be9ed57dd1d31adbecb79ee6d8b0c38",
+  "validation_summary": "research/v3_1/validation_summary.json",
+  "shared_dependencies_retained": [
+    "policy_mve",
+    "custom/agents/policy_officer.py"
+  ],
+  "historical_evidence_unchanged": true
+}

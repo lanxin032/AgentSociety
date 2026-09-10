@@ -1,0 +1,51 @@
+[
+  {
+    "round": 4,
+    "action": {
+      "kind": "inspect",
+      "target": "T:F4-3:0",
+      "params": {},
+      "reason": "T:F4-3:0尚未调查，作为主办部门需现场获取可核查材料以推进处理。"
+    },
+    "receipt": {
+      "actor_id": 3,
+      "round": 4,
+      "status": "queued",
+      "code": "accepted_for_settlement"
+    }
+  },
+  {
+    "round": 5,
+    "action": {
+      "kind": "query_status",
+      "target": "T:F4-3:0",
+      "params": {
+        "department": 2
+      },
+      "reason": "上一轮调查已揭示本地任务计划并派工给部门2，但任务仍为pending状态，需查询部门2的进展以决定后续协调或等待。"
+    },
+    "receipt": {
+      "actor_id": 3,
+      "round": 5,
+      "status": "queued",
+      "code": "accepted_for_settlement"
+    }
+  },
+  {
+    "round": 6,
+    "action": {
+      "kind": "review_project",
+      "target": "J:P:1:1:review_project:3",
+      "params": {
+        "opinion": "approve"
+      },
+      "reason": "收到项目P:1的评审任务，项目负责人已提交诊断证据（F4-1、F4-2、F4-3均发现缺陷）和replace_shared_main方案，预算6.0。作为基础设施部门，该方案涉及接口作业，符合专业范围；且T:F4-1已修复关闭，片区4仍有异常，支持整体更换方案。"
+    },
+    "receipt": {
+      "actor_id": 3,
+      "round": 6,
+      "status": "queued",
+      "code": "accepted_for_settlement"
+    }
+  }
+]

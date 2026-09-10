@@ -1,0 +1,47 @@
+[
+  {
+    "round": 15,
+    "action": {
+      "kind": "wait",
+      "target": null,
+      "params": {},
+      "reason": "上一轮派单T:F2-1:0至部门3已执行但未收到反馈，其他工单无新证据或状态变化；等待部门3调查结果可降低协调成本，避免重复派单。"
+    },
+    "receipt": {
+      "actor_id": 1,
+      "round": 15,
+      "status": "queued",
+      "code": "accepted_for_settlement"
+    }
+  },
+  {
+    "round": 16,
+    "action": {
+      "kind": "wait",
+      "target": null,
+      "params": {},
+      "reason": "上一轮派单T:F2-1:0至部门3已执行但未收到反馈，其他工单无新证据或状态变化；等待部门3调查结果可降低协调成本，避免重复派单。"
+    },
+    "receipt": {
+      "actor_id": 1,
+      "round": 16,
+      "status": "queued",
+      "code": "accepted_for_settlement"
+    }
+  },
+  {
+    "round": 17,
+    "action": {
+      "kind": "wait",
+      "target": null,
+      "params": {},
+      "reason": "上一轮派单T:F2-1:0至部门3已执行但未收到反馈，其他工单无新证据或状态变化；等待部门3调查结果可降低协调成本，避免重复派单。"
+    },
+    "receipt": {
+      "actor_id": 1,
+      "round": 17,
+      "status": "queued",
+      "code": "accepted_for_settlement"
+    }
+  }
+]

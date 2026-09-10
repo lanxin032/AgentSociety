@@ -1,0 +1,47 @@
+[
+  {
+    "round": 2,
+    "action": {
+      "kind": "work",
+      "target": "K:T:F4-1:0:3",
+      "params": {},
+      "reason": "上一轮现场调查已揭示本地任务计划，作为主办部门应执行该任务以修复基础设施接口破损，解决供水异常问题。"
+    },
+    "receipt": {
+      "actor_id": 3,
+      "round": 2,
+      "status": "queued",
+      "code": "accepted_for_settlement"
+    }
+  },
+  {
+    "round": 3,
+    "action": {
+      "kind": "inspect",
+      "target": "T:F4-2:0",
+      "params": {},
+      "reason": "T:F4-1:0已修复关闭，但片区4仍有T:F4-2:0和T:F4-3:0两个未调查的供水异常工单，需先现场调查获取可核查材料，为后续处理提供依据。"
+    },
+    "receipt": {
+      "actor_id": 3,
+      "round": 3,
+      "status": "queued",
+      "code": "accepted_for_settlement"
+    }
+  },
+  {
+    "round": 4,
+    "action": {
+      "kind": "inspect",
+      "target": "T:F4-3:0",
+      "params": {},
+      "reason": "T:F4-3:0尚未调查，作为主办部门需现场获取可核查材料以推进处理。"
+    },
+    "receipt": {
+      "actor_id": 3,
+      "round": 4,
+      "status": "queued",
+      "code": "accepted_for_settlement"
+    }
+  }
+]

@@ -1,0 +1,72 @@
+{
+  "version": "1.0",
+  "review_date": "2026-09-09",
+  "status": "local_source_review_only_no_new_web_verification",
+  "parameter_authority": "policy_mve/spec.py and per-run exported specification with hash",
+  "general_boundary": "政策支持流程结构，成功案例支持任务原型；均不识别合成实验参数或现实政策效果。",
+  "sources": [
+    {
+      "id": "MVE_POLICY_ROUTING_COLLABORATION",
+      "registry": "research/policy_mapping_20260909/sources.json#S04",
+      "title": "北京市接诉即办工作条例",
+      "url": "https://www.beijing.gov.cn/zhengce/dfxfg/202109/t20210925_2501573.html",
+      "locator": "第十一至十二条、第十四至十六条、第十九至二十条",
+      "evidence": "本地sources.json保留的正文文本；2021年公布文本",
+      "supports": ["依法依职责目录派单和异议审核", "首接负责及普通跨单位协调", "水等公共服务保障及难题提级协调", "基准组应保留合法处理路径"],
+      "cannot_estimate": ["A准确率和覆盖率", "B提供率和效果", "动作人时", "部门容量", "供水工程技术参数"]
+    },
+    {
+      "id": "MVE_POLICY_PROACTIVE",
+      "registry": "research/policy_mapping_20260909/sources.json#S04",
+      "title": "北京市接诉即办工作条例",
+      "url": "https://www.beijing.gov.cn/zhengce/dfxfg/202109/t20210925_2501573.html",
+      "locator": "第二十四至二十五条",
+      "evidence": "本地sources.json保留的正文文本",
+      "supports": ["分析高频共性问题", "明确主责、协调治理及源头治理", "基准存在主动治理职责"],
+      "cannot_estimate": ["6轮窗口", "阈值3", "6轮冷却", "专项成功率", "资源成本及效果时滞"]
+    },
+    {
+      "id": "MVE_POLICY_ABC",
+      "registry": "research/policy_mapping_20260909/sources.json#S03",
+      "title": "中共北京市委关于进一步深化接诉即办改革的意见",
+      "url": "https://www.beijing.gov.cn/zhengce/zhengcefagui/202506/t20250623_4118829.html",
+      "locator": "第（五）、（六）、（八）、（十四）项；成文2025-03-23，发布2025-06-23",
+      "evidence": "本地sources.json保留的正文文本",
+      "supports": ["优化分类派单", "跨区域跨部门疑难复杂诉求协同", "派单智能推荐", "高频共性难点诉求专项治理与统筹调度"],
+      "cannot_estimate": ["q0=0和q1=1为现实覆盖率", "AI性能", "模型采样参数", "专项阈值冷却期", "2021年案例曾采用这些强化操作", "ABC因果效应"]
+    },
+    {
+      "id": "MVE_CASE_K02_PROCESS",
+      "registry": "research/case_cards_202209_awards_20260909/case_cards.json#S02,K02,P05-P07",
+      "title": "接诉即办，他们这么干（水务部分）",
+      "url": "https://www.bjft.gov.cn/fengtaishibao/html/2022-08/22/content_9501_15189379.htm",
+      "locator": "03版；编者按、丰台区水务局案例背景及主要做法2—3",
+      "evidence": "本地案例卡的研究摘记和定位；非完整原始HTML",
+      "supports": ["跨部门及供水建设单位协作", "旧系统维护与结构改造并存", "外管产权等依赖", "5.2公里庭院线及900余万元分项市级资金", "50多次协调会议说明协调并非无成本"],
+      "cannot_estimate": ["行政人时", "全项目资金", "部门日常容量", "统一高频选题规则", "AI派单使用与性能", "合成片区设施数量", "成功或复发概率"]
+    },
+    {
+      "id": "MVE_CASE_K02_TIMELINE",
+      "registry": "research/case_cards_202209_awards_20260909/case_cards.json#S03,K02,P04,P08",
+      "title": "丰台区明春苑小区通上市政“幸福水”",
+      "url": "https://www.beijing.gov.cn/renwen/sy/whkb/202108/t20210831_2481049.html",
+      "locator": "首段及小区介绍；社区及供水管理科访谈；末段2021-08-10建成与08-30投用",
+      "evidence": "本地案例卡的研究摘记和定位；非完整原始HTML",
+      "supports": ["项目涉及1467户", "外部管线建成后到投用有阶段依赖", "两个节点相差20日历日", "同一项目同期补证"],
+      "cannot_estimate": ["投诉人数", "全案工期", "C普遍生效时滞", "长期压力水质和复发", "12初始Issue及30轮", "现实政策效果"]
+    },
+    {
+      "id": "MVE_SELECTION",
+      "registry": "research/case_cards_202209_awards_20260909/case_cards.json#S00",
+      "title": "北京市接诉即办工作先进集体、先进个人、优秀案例名单公布",
+      "url": "https://jrj.beijing.gov.cn/jrgzdt/202206/t20220609_2732689.html",
+      "locator": "优秀案例名单图片第17项；表彰决定2022-05-18",
+      "evidence": "此前案例整理保存的用户图片与名单关联；本轮未重新视觉或外网核验",
+      "supports": ["K02获奖关联和成功案例选择属性"],
+      "cannot_estimate": ["普通案例构成", "平均处理效果", "总体成功率", "完整政策总体", "2025—2026基准覆盖率"]
+    }
+  ],
+  "exploratory_not_source_calibrated": ["4片区×3设施", "12初始Issue", "30轮", "四类模型角色与脚本居民", "q0=0,q1=1", "8组×3配对区组", "种子0及101、102、103", "高频窗口6阈值3冷却6", "模拟工作单位、资源容量及状态转移参数"],
+  "local_implementation_review": "spec/core已本地读取；共享资源、结算负担、C公开事件去重与终止后冷却、C不自动解决存量问题已写入协议。独立验证器10项针对性单测通过，不替代真实模型或框架接入。",
+  "pending_verification": ["A真实推荐调用及提示输入审计", "完整离线矩阵结果", "真实接入及预算账本证据", "正式批次报价与另行批准"]
+}

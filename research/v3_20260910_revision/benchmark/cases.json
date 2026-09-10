@@ -1,0 +1,368 @@
+{
+  "version": "v3-action-comprehension-benchmark-20260910-1.0",
+  "status": "offline_prepared_not_model_tested",
+  "cases": [
+    {
+      "id": "C01",
+      "title": "调查形成任务定义与向他人派工的区别",
+      "source": {
+        "run_dir": "runs/v3-autonomous-diagnostic-20260909/v3_diagnostic_s1001_r0_diagnostic_A0_B1_C0",
+        "observations_path": "runs/v3-autonomous-diagnostic-20260909/v3_diagnostic_s1001_r0_diagnostic_A0_B1_C0/observations.jsonl",
+        "line": 23,
+        "sha256": "fc25d256c2e6fa8d95252475c7deb95e8c37a82f2c5ddab769bd410f42c4fddb",
+        "round": 5,
+        "actor_id": 3,
+        "decision_path": "runs/v3-autonomous-diagnostic-20260909/v3_diagnostic_s1001_r0_diagnostic_A0_B1_C0/agents/agent_0003/decisions.jsonl",
+        "decision_line": 6,
+        "decision_sha256": "e5b61aeee1975414f8d6f805892e73edc909d957ed25e56cf6389258fcfdff04"
+      },
+      "observation_path": "observations/C01.json",
+      "history_path": "histories/C01.json",
+      "questions": [
+        {
+          "id": "C01_Q1",
+          "prompt": "观察中的T:F4-3:0任务列actor=2、state=pending。仅据这些字段和当前记录，哪项判断成立？",
+          "options": {
+            "A": "部门2的任务已完成。",
+            "B": "部门2已收到派工并确认承接。",
+            "C": "已知任务责任角色，但不能据此证明部门2已收到或承接派工。",
+            "D": "此工单不再存在协调需要。"
+          },
+          "answer_key": "C",
+          "evidence": [
+            {
+              "pointer": "/observation/visible_tickets/3/tasks/0",
+              "explanation": "可见的是责任角色和本地pending任务视图，不含对方接收或承接证据。"
+            },
+            {
+              "pointer": "/observation/last_receipt",
+              "explanation": "上次执行结果是调查形成本地任务计划，并非协调请求执行回执。"
+            },
+            {
+              "pointer": "/observation/sent_messages",
+              "explanation": "本观察的本人发送列表为空；不据此读取他人隐藏知识。"
+            }
+          ]
+        },
+        {
+          "id": "C01_Q2",
+          "prompt": "不评价本轮应该选哪个动作：当前针对T:F4-3:0的候选中，哪些操作语义属于向其他必要部门发送任务联系或邀请？",
+          "options": {
+            "A": "request_coordination的conventional与joint候选。",
+            "B": "只有query_status。",
+            "C": "wait会自动完成派工。",
+            "D": "任何report_status都等同新派工。"
+          },
+          "answer_key": "A",
+          "evidence": [
+            {
+              "pointer": "/observation/available_actions",
+              "explanation": "观察同时给出conventional向部门2和joint候选。规则依据：policy_v3/core.py:_communication_action的request_coordination分支发送任务材料；这不是采用建议。"
+            },
+            {
+              "pointer": "/observation/public_rules/case_workflow",
+              "explanation": "公开规则分别保留普通联系和联合本人确认流程；不把任务定义当接收回执。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C02",
+      "title": "空状态回复能够证明与不能证明的内容",
+      "source": {
+        "run_dir": "runs/v3-autonomous-diagnostic-20260909/v3_diagnostic_s1001_r0_diagnostic_A0_B1_C0",
+        "observations_path": "runs/v3-autonomous-diagnostic-20260909/v3_diagnostic_s1001_r0_diagnostic_A0_B1_C0/observations.jsonl",
+        "line": 31,
+        "sha256": "fc25d256c2e6fa8d95252475c7deb95e8c37a82f2c5ddab769bd410f42c4fddb",
+        "round": 7,
+        "actor_id": 3,
+        "decision_path": "runs/v3-autonomous-diagnostic-20260909/v3_diagnostic_s1001_r0_diagnostic_A0_B1_C0/agents/agent_0003/decisions.jsonl",
+        "decision_line": 8,
+        "decision_sha256": "e5b61aeee1975414f8d6f805892e73edc909d957ed25e56cf6389258fcfdff04"
+      },
+      "observation_path": "observations/C02.json",
+      "history_path": "histories/C02.json",
+      "questions": [
+        {
+          "id": "C02_Q1",
+          "prompt": "message-4是部门2返回的status_reply，payload.records为空。该回复能支持哪个结论？",
+          "options": {
+            "A": "部门2已经完成任务。",
+            "B": "部门2已经承接了派工。",
+            "C": "部门2事实上从未执行任何工作。",
+            "D": "回复没有提供进度记录，实际办理进度仍不能由它确定。"
+          },
+          "answer_key": "D",
+          "evidence": [
+            {
+              "pointer": "/observation/inbox/1/payload",
+              "explanation": "空records不是完成、承接或未工作的证据；本题答案为未知实际进度。"
+            }
+          ]
+        },
+        {
+          "id": "C02_Q2",
+          "prompt": "本人此前发送的message-2是否在该条消息中携带了任务定义或完成材料？",
+          "options": {
+            "A": "携带了该工单全部任务。",
+            "B": "没有；其保存payload为空。",
+            "C": "携带了项目P:1的全部材料。",
+            "D": "空payload表示接收方已完成，所以无需材料。"
+          },
+          "answer_key": "B",
+          "evidence": [
+            {
+              "pointer": "/observation/sent_messages/0/payload",
+              "explanation": "本人保存的status_query payload为{}。只判断该条可见消息，不猜测对方隐藏状态。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C03",
+      "title": "本人施工完成后的报告与查询语义",
+      "source": {
+        "run_dir": "runs/v3-autonomous-diagnostic-20260909/v3_diagnostic_s1001_r0_diagnostic_A0_B0_C1",
+        "observations_path": "runs/v3-autonomous-diagnostic-20260909/v3_diagnostic_s1001_r0_diagnostic_A0_B0_C1/observations.jsonl",
+        "line": 53,
+        "sha256": "9bbc2024fab7ff5313cb1030b01e0d4801c394d60a760620f562fb5294932a5e",
+        "round": 13,
+        "actor_id": 2,
+        "decision_path": "runs/v3-autonomous-diagnostic-20260909/v3_diagnostic_s1001_r0_diagnostic_A0_B0_C1/agents/agent_0002/decisions.jsonl",
+        "decision_line": 14,
+        "decision_sha256": "4a31f37f6ed18371031a6431c40434f178c31caab87593ec284ef459d95b8713"
+      },
+      "observation_path": "observations/C03.json",
+      "history_path": "histories/C03.json",
+      "questions": [
+        {
+          "id": "C03_Q1",
+          "prompt": "部门2此时的last_receipt及本人任务记录能够确认哪件事？",
+          "options": {
+            "A": "本人施工尚未开始。",
+            "B": "只有本人的专业评审完成。",
+            "C": "本人在P:1的施工分项已完成。",
+            "D": "P:1整体已经通过物理验收。"
+          },
+          "answer_key": "C",
+          "evidence": [
+            {
+              "pointer": "/observation/last_receipt",
+              "explanation": "上一轮implement_project执行成功、code为work_completed，记录实际付费。"
+            },
+            {
+              "pointer": "/observation/projects/0/tasks/2",
+              "explanation": "本人分项state=completed、completed_round=12；不等同项目验收。"
+            }
+          ]
+        },
+        {
+          "id": "C03_Q2",
+          "prompt": "不判断本轮最优选择：若只比较接口含义，以下哪个动作表示主动把本人持有的P:1记录发给负责人4？",
+          "options": {
+            "A": "report_status，target=P:1，recipient=4。",
+            "B": "query_status，target=P:1，department=4。",
+            "C": "wait。",
+            "D": "confirm_project_task会代替向负责人报告全部施工材料。"
+          },
+          "answer_key": "A",
+          "evidence": [
+            {
+              "pointer": "/observation/available_actions/1",
+              "explanation": "这是可见报告候选。规则依据：policy_v3/core.py:_communication_action的report_status发送本人对应对象合法记录，query_status仅询问。"
+            },
+            {
+              "pointer": "/observation/projects/0/received_records",
+              "explanation": "本角色已持有本人完成记录及收到的其他P:1材料；没有引入隐藏世界状态。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C04",
+      "title": "本人专项确认与他人确认的知识边界",
+      "source": {
+        "run_dir": "runs/v3-autonomous-diagnostic-20260909/v3_diagnostic_s1001_r0_diagnostic_A0_B0_C1",
+        "observations_path": "runs/v3-autonomous-diagnostic-20260909/v3_diagnostic_s1001_r0_diagnostic_A0_B0_C1/observations.jsonl",
+        "line": 33,
+        "sha256": "9bbc2024fab7ff5313cb1030b01e0d4801c394d60a760620f562fb5294932a5e",
+        "round": 8,
+        "actor_id": 2,
+        "decision_path": "runs/v3-autonomous-diagnostic-20260909/v3_diagnostic_s1001_r0_diagnostic_A0_B0_C1/agents/agent_0002/decisions.jsonl",
+        "decision_line": 9,
+        "decision_sha256": "4a31f37f6ed18371031a6431c40434f178c31caab87593ec284ef459d95b8713"
+      },
+      "observation_path": "observations/C04.json",
+      "history_path": "histories/C04.json",
+      "questions": [
+        {
+          "id": "C04_Q1",
+          "prompt": "观察能否确认本角色已经作出P:1专项任务确认？",
+          "options": {
+            "A": "能，完成评审就等于专项确认。",
+            "B": "不能；own_confirmed明确为false。",
+            "C": "能，收到任务包就等于本人确认。",
+            "D": "这个字段证明项目已经验收。"
+          },
+          "answer_key": "B",
+          "evidence": [
+            {
+              "pointer": "/observation/projects/0/own_confirmed",
+              "explanation": "本人确认状态为false。专业意见与本人任务确认是不同事件。"
+            }
+          ]
+        },
+        {
+          "id": "C04_Q2",
+          "prompt": "仅依据本角色当前持有的材料，关于部门3是否已经作出专项任务确认，哪项结论成立？",
+          "options": {
+            "A": "可以确定已确认。",
+            "B": "可以确定从未确认。",
+            "C": "两部门已经自动互相确认。",
+            "D": "目前无法确定；未收到该确认记录不能证明对方未作出确认。"
+          },
+          "answer_key": "D",
+          "evidence": [
+            {
+              "pointer": "/observation/projects/0/received_records",
+              "explanation": "可见记录无部门3的project_confirmation；不能引用另一个角色或owner的实际确认状态。"
+            },
+            {
+              "pointer": "/observation/projects/0/project_package/note",
+              "explanation": "原观察明确未收到的意见和进度仍未知。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C05",
+      "title": "负责人已知阶段与未获知的物理进度",
+      "source": {
+        "run_dir": "runs/v3-autonomous-diagnostic-20260909/v3_diagnostic_s1001_r0_diagnostic_A0_B0_C1",
+        "observations_path": "runs/v3-autonomous-diagnostic-20260909/v3_diagnostic_s1001_r0_diagnostic_A0_B0_C1/observations.jsonl",
+        "line": 120,
+        "sha256": "9bbc2024fab7ff5313cb1030b01e0d4801c394d60a760620f562fb5294932a5e",
+        "round": 29,
+        "actor_id": 4,
+        "decision_path": "runs/v3-autonomous-diagnostic-20260909/v3_diagnostic_s1001_r0_diagnostic_A0_B0_C1/agents/agent_0004/decisions.jsonl",
+        "decision_line": 32,
+        "decision_sha256": "b73fc8f01f21c1c8f87da240aaee4404f2b133b1e9c2bc5845451be2a0fdbbd5"
+      },
+      "observation_path": "observations/C05.json",
+      "history_path": "histories/C05.json",
+      "questions": [
+        {
+          "id": "C05_Q1",
+          "prompt": "负责人看到state=approved、施工任务视图仍为pending。仅凭该观察，对两分项实际最新施工进度可作何判断？",
+          "options": {
+            "A": "可以确定两项实际都没开始。",
+            "B": "可以确定两项实际都完成了。",
+            "C": "可以确定项目已经验收失败。",
+            "D": "实际最新进度无法确定；这表示负责人已知阶段及尚无完成更新的任务视图。"
+          },
+          "answer_key": "D",
+          "evidence": [
+            {
+              "pointer": "/observation/projects/0/state",
+              "explanation": "approved是负责人可见的组织阶段；不是物理状态的全知读数。规则依据：policy_v3/core.py:_visible_project与_learn按负责人收到的记录更新阶段。"
+            },
+            {
+              "pointer": "/observation/projects/0/tasks",
+              "explanation": "所持施工视图为较早时点的pending，不能证明客观未完成或已完成。"
+            }
+          ]
+        },
+        {
+          "id": "C05_Q2",
+          "prompt": "accept_project出现在本轮候选中，是否单独证明验收所需条件已齐备？",
+          "options": {
+            "A": "是，候选出现等于核验通过。",
+            "B": "是，预算获批等于工程与回执都完成。",
+            "C": "不是；可提交申请与拥有完成回执、满足时滞及其他核验条件不同。",
+            "D": "不是，因为该角色在所有情景都没有验收权限。"
+          },
+          "answer_key": "C",
+          "evidence": [
+            {
+              "pointer": "/observation/available_actions/12",
+              "explanation": "该候选证明允许提出申请，不保证执行成功。"
+            },
+            {
+              "pointer": "/observation/public_rules/project_workflow",
+              "explanation": "原公开规则要求负责人取得回执、等待技术时滞并申请验收；执行还核对物理条件。"
+            },
+            {
+              "pointer": "/observation/projects/0/received_records",
+              "explanation": "所持记录没有两分项施工完成回执；不补入隐藏的真实完成情况。"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C06",
+      "title": "已派单对象与当前候选集合的区别",
+      "source": {
+        "run_dir": "runs/v3-autonomous-diagnostic-20260909/v3_diagnostic_s1001_r0_diagnostic_A0_B0_C0",
+        "observations_path": "runs/v3-autonomous-diagnostic-20260909/v3_diagnostic_s1001_r0_diagnostic_A0_B0_C0/observations.jsonl",
+        "line": 73,
+        "sha256": "e64de3c19683c09c29bd80cfdb0b3c65dde2bf7a2e7c5d60099d4d0af29bd7a3",
+        "round": 18,
+        "actor_id": 1,
+        "decision_path": "runs/v3-autonomous-diagnostic-20260909/v3_diagnostic_s1001_r0_diagnostic_A0_B0_C0/agents/agent_0001/decisions.jsonl",
+        "decision_line": 19,
+        "decision_sha256": "dc6f877c27295b9d2ceb59719d521df1a3cfd4906f4f1e9dc1b54bbaef102e52"
+      },
+      "observation_path": "observations/C06.json",
+      "history_path": "histories/C06.json",
+      "questions": [
+        {
+          "id": "C06_Q1",
+          "prompt": "若输出{\"kind\":\"route\",\"target\":\"T:F2-1:0\",\"params\":{\"department\":3,\"use_recommendation\":false}}，仅检查当前候选契约，应如何判断？",
+          "options": {
+            "A": "是有效候选，因为这是有效JSON。",
+            "B": "不是当前有效候选；该kind、target、params组合不在available_actions中。",
+            "C": "是有效候选，因为工单仍在visible_tickets中。",
+            "D": "是有效候选，只要把reason写得更完整。"
+          },
+          "answer_key": "B",
+          "evidence": [
+            {
+              "pointer": "/observation/available_actions",
+              "explanation": "原17候选没有该目标的route组合；判断不依赖历史失败响应或隐藏事件。"
+            },
+            {
+              "pointer": "/observation/visible_tickets/3/lead",
+              "explanation": "该工单可见lead=3。出现在工单列表不等于本轮可再派单。"
+            }
+          ]
+        },
+        {
+          "id": "C06_Q2",
+          "prompt": "以下哪项仅描述当前候选契约，而不替角色决定业务优先级？",
+          "options": {
+            "A": "只能从本轮available_actions复制候选，包括其中的wait；旧动作不会因曾经合法而继续合法。",
+            "B": "只要没有收到反馈，任何以前的route都可重复提交。",
+            "C": "可以自行添加一个新目标，等引擎判断。",
+            "D": "必须选择列表第一个候选。"
+          },
+          "answer_key": "A",
+          "evidence": [
+            {
+              "pointer": "/observation/available_actions",
+              "explanation": "候选契约限定本轮集合，但不规定最优候选或顺序优先级。"
+            },
+            {
+              "pointer": "/observation/available_actions/9",
+              "explanation": "wait确在当前候选内；这不是要求本轮选择wait。"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

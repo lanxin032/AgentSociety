@@ -1,0 +1,562 @@
+{
+  "version": "policy-mve-1.2",
+  "status": "frozen_for_integration",
+  "actors": {
+    "1": "受理派单",
+    "2": "供水办理",
+    "3": "基础设施办理",
+    "4": "专项负责人"
+  },
+  "config": {
+    "q0": 0.0,
+    "q1": 1.0,
+    "signal_window": 6,
+    "signal_threshold": 3,
+    "signal_cooldown": 6,
+    "project_lag": 2,
+    "project_steps": 2,
+    "labor_per_actor": 100.0,
+    "capital": 24.0,
+    "decision_cost": 0.1,
+    "route_cost": 0.5,
+    "inspect_cost": 1.0,
+    "coordination_cost": 1.0,
+    "work_cost": 1.0,
+    "case_work_capital": 0.5,
+    "shared_crew_capacity": 2,
+    "project_proposal_cost": 1.0,
+    "project_diagnosis_cost": 2.0,
+    "project_work_cost": 2.0,
+    "project_accept_cost": 0.5,
+    "project_step_capital": 3.0,
+    "board_cost": 0.5,
+    "recommendation_cost": 0.2,
+    "shock_probability": 0.1,
+    "common_root_shock_probability": 0.22,
+    "repaired_root_shock_probability": 0.025,
+    "repeat_report_interval": 4
+  },
+  "parameters": {
+    "q0": {
+      "value": 0.0,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "q1": {
+      "value": 1.0,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "signal_window": {
+      "value": 6,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "signal_threshold": {
+      "value": 3,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "signal_cooldown": {
+      "value": 6,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "project_lag": {
+      "value": 2,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "project_steps": {
+      "value": 2,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "labor_per_actor": {
+      "value": 100.0,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "capital": {
+      "value": 24.0,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "decision_cost": {
+      "value": 0.1,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "route_cost": {
+      "value": 0.5,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "inspect_cost": {
+      "value": 1.0,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "coordination_cost": {
+      "value": 1.0,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "work_cost": {
+      "value": 1.0,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "case_work_capital": {
+      "value": 0.5,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "shared_crew_capacity": {
+      "value": 2,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "project_proposal_cost": {
+      "value": 1.0,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "project_diagnosis_cost": {
+      "value": 2.0,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "project_work_cost": {
+      "value": 2.0,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "project_accept_cost": {
+      "value": 0.5,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "project_step_capital": {
+      "value": 3.0,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "board_cost": {
+      "value": 0.5,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "recommendation_cost": {
+      "value": 0.2,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "shock_probability": {
+      "value": 0.1,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "common_root_shock_probability": {
+      "value": 0.22,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "repaired_root_shock_probability": {
+      "value": 0.025,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    },
+    "repeat_report_interval": {
+      "value": 4,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "lines 238-247 (parameters require evidence or explicit assumptions)",
+      "note": "Exploratory value; not calibrated from Beijing operating data."
+    }
+  },
+  "scenario": {
+    "districts": 4,
+    "facilities_per_district": 3,
+    "initial_issues": 12,
+    "horizon": 30,
+    "basis_type": "synthetic_design_with_case_informed_constraints",
+    "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/北京2022优秀案例_案例卡与参数来源_阅读版.md",
+    "locator": "lines 5-9, 25-35, 45-55, 64-74, 83-93",
+    "note": "Four synthetic archetypes, not four mutually exclusive empirical case classifications."
+  },
+  "decision_model": "deepseek-v4-flash",
+  "temperature": 0.2,
+  "max_output_tokens": 4096,
+  "routing": "official EnvRouterProxy with typed EnvLike actor; no codegen",
+  "pilot_seed": 0,
+  "formal_runs": [
+    {
+      "seed": 101,
+      "policy": "000",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 7
+    },
+    {
+      "seed": 101,
+      "policy": "001",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 2
+    },
+    {
+      "seed": 101,
+      "policy": "010",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 1
+    },
+    {
+      "seed": 101,
+      "policy": "011",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 8
+    },
+    {
+      "seed": 101,
+      "policy": "100",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 5
+    },
+    {
+      "seed": 101,
+      "policy": "101",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 4
+    },
+    {
+      "seed": 101,
+      "policy": "110",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 6
+    },
+    {
+      "seed": 101,
+      "policy": "111",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 3
+    },
+    {
+      "seed": 102,
+      "policy": "000",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 6
+    },
+    {
+      "seed": 102,
+      "policy": "001",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 8
+    },
+    {
+      "seed": 102,
+      "policy": "010",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 2
+    },
+    {
+      "seed": 102,
+      "policy": "011",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 4
+    },
+    {
+      "seed": 102,
+      "policy": "100",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 7
+    },
+    {
+      "seed": 102,
+      "policy": "101",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 3
+    },
+    {
+      "seed": 102,
+      "policy": "110",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 5
+    },
+    {
+      "seed": 102,
+      "policy": "111",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 1
+    },
+    {
+      "seed": 103,
+      "policy": "000",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 1
+    },
+    {
+      "seed": 103,
+      "policy": "001",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 2
+    },
+    {
+      "seed": 103,
+      "policy": "010",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 5
+    },
+    {
+      "seed": 103,
+      "policy": "011",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 6
+    },
+    {
+      "seed": 103,
+      "policy": "100",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 8
+    },
+    {
+      "seed": 103,
+      "policy": "101",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 7
+    },
+    {
+      "seed": 103,
+      "policy": "110",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 3
+    },
+    {
+      "seed": 103,
+      "policy": "111",
+      "horizon": 30,
+      "status": "awaiting_batch_budget",
+      "order_within_block": 4
+    }
+  ],
+  "primary_metric": "cumulative_issue_burden",
+  "resident_behavior": "fixed scripts",
+  "inference": "exploratory descriptive, 3 paired simulation blocks",
+  "budget_scope": "pilot incremental 5 RMB and 200 requests; batch requires priced approval",
+  "source_manifest": [
+    {
+      "path": "policy_mve/__init__.py",
+      "sha256": "a9c9663db597ae1ba8fc0159bfc858cb9f1c7d0cddf4c0842e9a6b73b4b4c981"
+    },
+    {
+      "path": "policy_mve/analyze.py",
+      "sha256": "1df38a8c058e97c0691cd983ca169c843bda2be2526b74d2ecf841884416d41b"
+    },
+    {
+      "path": "policy_mve/core.py",
+      "sha256": "f599cf0d54b6cc07540d73e5c56f841bd26ee7f7cb495f9da6aef4f4a5c27c73"
+    },
+    {
+      "path": "policy_mve/io.py",
+      "sha256": "8bfdf1934ee1d290363495d1e0c1f8108f490a4cb7b542abaf1d0ed56cb92d8b"
+    },
+    {
+      "path": "policy_mve/llm.py",
+      "sha256": "5e97e799c0b227c2e5a0ba1b5525f97ee5424c421459bf0e6a4ed445b6d130b5"
+    },
+    {
+      "path": "policy_mve/router.py",
+      "sha256": "07a706587de11439a471c5be5bb893760f2c6234f5b480c83ee01607b451f5b9"
+    },
+    {
+      "path": "policy_mve/spec.py",
+      "sha256": "4c59fb47ec9dacf1edbff87685db049da1355e1acadab571fbf6005542a5c5bb"
+    },
+    {
+      "path": "policy_mve/verify.py",
+      "sha256": "6c59a249613b86f0457c450e9659655f611447796eb7ba6d99cc191f41fe6472"
+    },
+    {
+      "path": "custom/agents/policy_officer.py",
+      "sha256": "62bf3bd283582d51ab048bdf9c1c86724e9865aec8389dc4e06b5d75639cdeb9"
+    },
+    {
+      "path": "custom/envs/policy_env.py",
+      "sha256": "95ad2bf60c170c35618bc8f2b38612ecc8c2c5a38529df522966222baa195ae6"
+    },
+    {
+      "path": "tools/check_remote.py",
+      "sha256": "8bb6f7a51a998163b3a3901301cb615815f8e582e9d40886bbfc37d27ad7f9ab"
+    },
+    {
+      "path": "tools/configure_smoke.py",
+      "sha256": "da63ba18363aa57a43794f124f2b00a66600ec36f18020dce371710ff4d7ac1c"
+    },
+    {
+      "path": "tools/mve_budget.py",
+      "sha256": "2f1956eac571d3c96e4feae151f29c67e3fb39afa6422d5d436c52fc1c082244"
+    },
+    {
+      "path": "tools/mve_driver.py",
+      "sha256": "ed2a48905970064631e42ee7a262658fbfc1446b89eb9437d8235d030455577c"
+    },
+    {
+      "path": "tools/quote_mve.py",
+      "sha256": "629be271350b7266e66ed3bc9575baf46e02552d245e420afbce751cb7e1553c"
+    },
+    {
+      "path": "tools/run_mve.py",
+      "sha256": "eee3aaba360f89bde33193bfaab2e1e654369d47767a2a7488aec616944a788f"
+    },
+    {
+      "path": "tools/run_mve_contract_probe.py",
+      "sha256": "d6b6f6690c3ed41c476e5bf96efbfd6a05965d87612912433c875c69c04eb109"
+    },
+    {
+      "path": "tools/run_mve_offline.py",
+      "sha256": "c9e5608706e6bdeb846ff6777af72705230e3fb637a4caa0c2225b333aead066"
+    },
+    {
+      "path": "tools/run_smoke.py",
+      "sha256": "3f9262df57bf532ef04bdf5d56f3907c6fa7c1ecc4c1248dbb3c60c9e336e7ea"
+    },
+    {
+      "path": "tools/smoke_budget.py",
+      "sha256": "7711dfdf63b39f2a3d008eab31c1548d595b4bfc7cb473ee5730d1a73807a836"
+    },
+    {
+      "path": "tools/smoke_driver.py",
+      "sha256": "4ac40c0422f8330c38a1358647a7c0f9e9a111c22503e8bb34ebf144e7706529"
+    },
+    {
+      "path": "tools/summarize_mve.py",
+      "sha256": "4990fcb6af73005c4d61a1ebfda6803ad147237399937a339e346971bfdd286f"
+    },
+    {
+      "path": "tools/sync_mve.py",
+      "sha256": "25cafd6f3805e90ab12c8676dd7f10de1eea3283c053839be7cb105c6d40b326"
+    },
+    {
+      "path": "tools/verify_mve.py",
+      "sha256": "49d122f31ac01c8d00f9faf5971e96e81e3a8cff71d427a9083350fb18a4a870"
+    },
+    {
+      "path": "tools/verify_smoke.py",
+      "sha256": "7fd3524ac23ea50e97d14bd2a6d0b914d91e1877566215530d11750d659a7d37"
+    },
+    {
+      "path": "research/mve_20260909/b_confirmation_review.md",
+      "sha256": "11275f20bd50675672a73abd90d8c46f3c21b42c24275f7ea70e9c2dafb778f9"
+    },
+    {
+      "path": "research/mve_20260909/delivery_review.md",
+      "sha256": "810963bd2c4a58fa49363e5913c965d8c34747d3a897bd5aa1886e1d554c682d"
+    },
+    {
+      "path": "research/mve_20260909/mechanism_reference.md",
+      "sha256": "6e9eabce2bcdd113bb34251d0b9d45b30bec9f3872684c9190abea8731f51f53"
+    },
+    {
+      "path": "research/mve_20260909/protocol.md",
+      "sha256": "280aef292bd96cfe67920f24a651548e8944c786d24a5f88df4d4c05bf1e8e17"
+    },
+    {
+      "path": "research/mve_20260909/README.md",
+      "sha256": "81868c7c98349c0b4c0805e56f5947c58948be715d9ffb10fd9cc08b77e4dde6"
+    },
+    {
+      "path": "research/mve_20260909/runtime_delivery_review.md",
+      "sha256": "3c452d4f32f130c9952a81a7853881c7c618c6929f225ffd66eec30359f89833"
+    },
+    {
+      "path": "research/mve_20260909/source_boundaries.json",
+      "sha256": "bc036756feccb7b6e24f03f33fcb8452fe2413370f84e2ef76da477327d17074"
+    }
+  ],
+  "change_from_1_0": "Explicit optional joint participant confirmation before shared board activation; baseline work remains legal without confirmation. Original sources retained in runs/mve-source-snapshots/policy-mve-1.0.",
+  "model_settings": {
+    "model": "deepseek-v4-flash",
+    "temperature": 0.2,
+    "max_tokens": 4096,
+    "thinking": {
+      "type": "disabled"
+    },
+    "response_format": {
+      "type": "json_object"
+    }
+  },
+  "change_from_1_1": "Role-private settlement receipts and explicit public case/project workflows; no change to objective transitions or metrics."
+}

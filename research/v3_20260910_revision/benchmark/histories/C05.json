@@ -1,0 +1,49 @@
+[
+  {
+    "round": 26,
+    "action": {
+      "kind": "wait",
+      "target": null,
+      "params": {},
+      "reason": "项目P:1的施工任务J:P:1:1:implement_project:3（部门3）已多次发送施工指派但未完成，部门2施工依赖其完成；等待执行结果，暂无其他必要行动。"
+    },
+    "receipt": {
+      "actor_id": 4,
+      "round": 26,
+      "status": "queued",
+      "code": "accepted_for_settlement"
+    }
+  },
+  {
+    "round": 27,
+    "action": {
+      "kind": "reply_status",
+      "target": "message-22",
+      "params": {},
+      "reason": "部门2于本轮（27）发来状态查询，尚未回复，按流程应回复以保持沟通，避免延误。"
+    },
+    "receipt": {
+      "actor_id": 4,
+      "round": 27,
+      "status": "queued",
+      "code": "accepted_for_settlement"
+    }
+  },
+  {
+    "round": 28,
+    "action": {
+      "kind": "request_project_work",
+      "target": "P:1",
+      "params": {
+        "department": 3
+      },
+      "reason": "项目P:1的施工任务J:P:1:1:implement_project:3（部门3）已多次发送指派但状态仍为pending，部门2施工依赖其完成；本轮再次请求部门3执行，以推动工程进展。"
+    },
+    "receipt": {
+      "actor_id": 4,
+      "round": 28,
+      "status": "queued",
+      "code": "accepted_for_settlement"
+    }
+  }
+]

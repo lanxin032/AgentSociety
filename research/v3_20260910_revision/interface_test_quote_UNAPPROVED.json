@@ -1,0 +1,29 @@
+{
+  "status": "proposal_not_authorized",
+  "api_requests_already_executed": 0,
+  "primary_tasks": 48,
+  "hard_request_cap_with_one_format_repair": 96,
+  "proxy_max_body_bytes": 98304,
+  "output_token_cap_per_request": 4096,
+  "max_proxy_reservation_total_rmb_at_screenshot_rates": 12.7401984,
+  "proposed_incremental_rmb_cap": 15,
+  "elapsed_time_estimate": null,
+  "rates": {
+    "model": "deepseek-v4-flash",
+    "input_rmb_per_million": 1.2,
+    "output_rmb_per_million": 2.4,
+    "evidence": "evidence/platform_model_prices_user.png",
+    "evidence_sha256": "0ec3f6111bdbe97bb52b823cd9d73a1e8d71817f3b86ce4226b607c41d924847",
+    "basis": "User supplied platform screenshot; refresh before execution.",
+    "actual_bill_verified": false
+  },
+  "authorizes_execution": false,
+  "bound_note": "All 96 requests are reserved at the existing proxy maximum body size plus its 4096-token padding. This is a conservative reservation calculation, not a measured bill or tokenizer guarantee.",
+  "execution_conditions": [
+    "Explicit stage approval and current rates",
+    "Original API ledger retained; new stage baseline binds its current prefix without rewriting history",
+    "Current cloud deadline checked",
+    "96-request and 15-rmb limits enforced by one owner",
+    "No automatic rerun after technical failure; no extra attempts to improve scores"
+  ]
+}

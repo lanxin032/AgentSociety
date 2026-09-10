@@ -1,0 +1,33 @@
+{
+  "status": "offline_kit_completed_no_paid_execution",
+  "created_utc": "2026-09-10T02:00:57.473762+00:00",
+  "case_count": 6,
+  "question_count": 12,
+  "request_plan_checks": {
+    "tasks": 48,
+    "understanding_tasks": 24,
+    "choice_tasks": 24,
+    "max_request_bytes": 56429,
+    "sum_primary_request_bytes": 1212828,
+    "answer_keys_excluded": true,
+    "choice_tasks_isolated": true,
+    "same_observation_history_and_candidates_between_variants": true
+  },
+  "safeguard_tests": {
+    "command": "D:/miniconda1/python.exe -B research/v3_20260910_revision/test_prepare_review.py",
+    "final_passed": 8,
+    "final_failed": 0,
+    "basis": "Observed process exit 0 and unittest OK in this preparation session.",
+    "initial_environment_issue": "TemporaryDirectory ACL blocked the write-protection test. Test changed to assert refusal against existing request_plan without creating a temporary directory; all eight then passed. Empty temporary directory was removed."
+  },
+  "independent_review": "independent_review.md",
+  "review_issue_closed": "commission_not_reported now explicitly scopes communication mode, lawful delivery and observation boundary.",
+  "runtime_sha256_unchanged": "8530b5271468bd93c8ee71cbde8b1206d6c926a22cf7e2948d00fa2f6ef87e9c",
+  "old_diagnostic_delivery_manifest_sha256_unchanged": "9459ae27cbcee1bac44a72e4f2a217b5d1b6dd873e4a5028f834257f1914308f",
+  "api_calls_in_this_preparation": 0,
+  "model_understanding_tested": false,
+  "new_mechanism_implemented": false,
+  "candidate_acceptance_cases": 11,
+  "candidate_acceptance_cases_executed": 0,
+  "next_paid_stage_authorized": false
+}

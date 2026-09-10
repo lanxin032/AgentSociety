@@ -1,0 +1,83 @@
+{
+  "status": "offline_preparation_validated",
+  "created_utc": "2026-09-10T01:54:24.814425+00:00",
+  "source_sha256": "8530b5271468bd93c8ee71cbde8b1206d6c926a22cf7e2948d00fa2f6ef87e9c",
+  "runtime_modified": false,
+  "api_calls": 0,
+  "model_understanding_tested": false,
+  "state_proposal_implemented": false,
+  "case_checks": [
+    {
+      "case_id": "C01",
+      "actor_id": 3,
+      "round": 5,
+      "source_line": 23,
+      "questions": 2,
+      "observation_exact": true,
+      "history_exact": true,
+      "evidence_pointers_resolve": true
+    },
+    {
+      "case_id": "C02",
+      "actor_id": 3,
+      "round": 7,
+      "source_line": 31,
+      "questions": 2,
+      "observation_exact": true,
+      "history_exact": true,
+      "evidence_pointers_resolve": true
+    },
+    {
+      "case_id": "C03",
+      "actor_id": 2,
+      "round": 13,
+      "source_line": 53,
+      "questions": 2,
+      "observation_exact": true,
+      "history_exact": true,
+      "evidence_pointers_resolve": true
+    },
+    {
+      "case_id": "C04",
+      "actor_id": 2,
+      "round": 8,
+      "source_line": 33,
+      "questions": 2,
+      "observation_exact": true,
+      "history_exact": true,
+      "evidence_pointers_resolve": true
+    },
+    {
+      "case_id": "C05",
+      "actor_id": 4,
+      "round": 29,
+      "source_line": 120,
+      "questions": 2,
+      "observation_exact": true,
+      "history_exact": true,
+      "evidence_pointers_resolve": true
+    },
+    {
+      "case_id": "C06",
+      "actor_id": 1,
+      "round": 18,
+      "source_line": 73,
+      "questions": 2,
+      "observation_exact": true,
+      "history_exact": true,
+      "evidence_pointers_resolve": true
+    }
+  ],
+  "request_plan_checks": {
+    "tasks": 48,
+    "understanding_tasks": 24,
+    "choice_tasks": 24,
+    "max_request_bytes": 56429,
+    "sum_primary_request_bytes": 1212828,
+    "answer_keys_excluded": true,
+    "choice_tasks_isolated": true,
+    "same_observation_history_and_candidates_between_variants": true
+  },
+  "script_sha256": "55b0349783d062e4f5da3977d06653574bdced3f8201406107faa63357d59208",
+  "cases_sha256": "eebb65b8fec2a8bbe4c9e76b60f37c5ea3c812bc49f517d06abfb14059666138"
+}

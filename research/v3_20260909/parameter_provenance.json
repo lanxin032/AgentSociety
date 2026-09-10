@@ -1,0 +1,275 @@
+{
+  "spec_version": "policy-v3-3.0",
+  "status": "synthetic_exploratory_not_empirically_calibrated",
+  "roles": {
+    "1": "受理派单员",
+    "2": "供水办理部门",
+    "3": "基础设施办理部门",
+    "4": "专项负责人"
+  },
+  "parameters": {
+    "labor_per_actor": {
+      "value": 100.0,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "capital": {
+      "value": 24.0,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "shared_crew_capacity": {
+      "value": 2,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "decision_cost": {
+      "value": 0.1,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "route_cost": {
+      "value": 0.5,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "inspect_cost": {
+      "value": 1.0,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "work_cost": {
+      "value": 1.0,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "case_work_capital": {
+      "value": 0.5,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "communication_cost": {
+      "value": 0.2,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "review_cost": {
+      "value": 0.5,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "setup_cost": {
+      "value": 0.5,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "maintenance_cost": {
+      "value": 0.1,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "project_proposal_cost": {
+      "value": 1.0,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "project_diagnosis_cost": {
+      "value": 2.0,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "project_work_cost": {
+      "value": 2.0,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "project_accept_cost": {
+      "value": 0.5,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "project_step_capital": {
+      "value": 3.0,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "project_steps": {
+      "value": 2,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "project_lag": {
+      "value": 2,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "recommendation_cost": {
+      "value": 0.2,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "signal_window": {
+      "value": 6,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "signal_threshold": {
+      "value": 3,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "signal_cooldown": {
+      "value": 6,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "repeat_report_interval": {
+      "value": 4,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "shock_probability": {
+      "value": 0.1,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "common_root_shock_probability": {
+      "value": 0.22,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "repaired_root_shock_probability": {
+      "value": 0.025,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "zero_communication_friction": {
+      "value": false,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    },
+    "fewer_shared_roots": {
+      "value": false,
+      "basis_type": "synthetic_research_assumption",
+      "source": "outputs/01a08490-e194-7ea1-a585-319e4cb1a9ef/政策操作化表_V2_状态动作与判定规程.md",
+      "locator": "B lines 85-100; C lines 102-119; calibration lines 238-247",
+      "note": "Prespecified V3 mechanism assumption; not an empirical Beijing estimate."
+    }
+  },
+  "sensitivity_overrides": {
+    "baseline": {},
+    "zero_communication_friction": {
+      "zero_communication_friction": true
+    },
+    "tight_resources": {
+      "labor_per_actor": 50.0,
+      "capital": 12.0,
+      "shared_crew_capacity": 1
+    },
+    "weak_slow_repair": {
+      "repaired_root_shock_probability": 0.1,
+      "project_lag": 6
+    },
+    "fewer_shared_roots": {
+      "fewer_shared_roots": true
+    }
+  },
+  "model_settings": {
+    "model": "deepseek-v4-flash",
+    "temperature": 0.2,
+    "max_tokens": 4096,
+    "thinking": {
+      "type": "disabled"
+    },
+    "response_format": {
+      "type": "json_object"
+    }
+  },
+  "policy_source_boundary": "V2 policy documents support the nature of service processes; they do not estimate these numerical costs, risks, capacities or causal effects.",
+  "public_workflow": {
+    "directory": {
+      "2": "供水及机泵作业、供水专业评审",
+      "3": "基础设施及接口作业、工程专业评审",
+      "4": "专项组织、调查、拟案、预算申请和验收申请"
+    },
+    "case_workflow": "派单后主办部门调查；普通联系、回复和进度报告合法可用。联合清单需本人确认才激活共享；未确认仍可依法普通办理。作业依赖与资源对所有流程相同，技术交接须有已送达的合法完成回执。",
+    "project_workflow": "专项负责人自愿立项、确认主责、现场调查及拟案；部门2和3作专业评审；负责人收到意见后申请预算；部门执行两个施工分项，按技术前提交接；负责人取得回执后等待技术时滞并申请验收。有依据可撤项，已耗资源不退。",
+    "project_template": {
+      "plan": "replace_shared_main",
+      "reviews": [
+        2,
+        3
+      ],
+      "construction": [
+        {
+          "department": 3,
+          "predecessor_department": null
+        },
+        {
+          "department": 2,
+          "predecessor_department": 3
+        }
+      ],
+      "note": "Public proposed-plan template only; it does not establish a shared defect or a correct intervention."
+    },
+    "evidence_standard": "共同根源拟案须有可核查现场材料；专业意见由部门自主给出，可以错误。预算只审查申请数额、意见是否齐备与当前资金，不认定真实根因。验收另核对真实物理条件。",
+    "ordinary_channel": "普通流程可分别联系、取得反馈、完成协调和源头项目，不丧失法定办理能力。",
+    "shared_channel": "联合/专项支持可归集已有授权记录、本人确认及同步执行回执；需要建立和维护成本，不生成专业判断、不保证更新成功或提高物理成功率。"
+  }
+}

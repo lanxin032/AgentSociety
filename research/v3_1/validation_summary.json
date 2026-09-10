@@ -1,0 +1,258 @@
+{
+  "status": "offline_implementation_and_cleanup_complete",
+  "created_utc": "2026-09-10T04:35:07.821657+00:00",
+  "spec_version": "policy-v3-3.1",
+  "canonical_source_root": "D:\\AgentSociety",
+  "source_sha256": "47efaaa4dbeb00c5ee38b814bebaecfc6be9ed57dd1d31adbecb79ee6d8b0c38",
+  "source_manifest": [
+    {
+      "path": "custom/agents/policy_officer.py",
+      "sha256": "62bf3bd283582d51ab048bdf9c1c86724e9865aec8389dc4e06b5d75639cdeb9"
+    },
+    {
+      "path": "custom/agents/policy_v3_officer.py",
+      "sha256": "58c60bc67dd0cb51a4b7a5e01652fd41f1d9a3643c37a06e5fb42cdcdbdc1458"
+    },
+    {
+      "path": "custom/envs/policy_env.py",
+      "sha256": "95ad2bf60c170c35618bc8f2b38612ecc8c2c5a38529df522966222baa195ae6"
+    },
+    {
+      "path": "custom/envs/policy_v3_env.py",
+      "sha256": "906dea5ff157a59fa5b12ea7fd6084b858217e78a421490c908a2ee843687aef"
+    },
+    {
+      "path": "policy_mve/__init__.py",
+      "sha256": "a9c9663db597ae1ba8fc0159bfc858cb9f1c7d0cddf4c0842e9a6b73b4b4c981"
+    },
+    {
+      "path": "policy_mve/analyze.py",
+      "sha256": "1df38a8c058e97c0691cd983ca169c843bda2be2526b74d2ecf841884416d41b"
+    },
+    {
+      "path": "policy_mve/core.py",
+      "sha256": "f599cf0d54b6cc07540d73e5c56f841bd26ee7f7cb495f9da6aef4f4a5c27c73"
+    },
+    {
+      "path": "policy_mve/io.py",
+      "sha256": "8bfdf1934ee1d290363495d1e0c1f8108f490a4cb7b542abaf1d0ed56cb92d8b"
+    },
+    {
+      "path": "policy_mve/llm.py",
+      "sha256": "5e97e799c0b227c2e5a0ba1b5525f97ee5424c421459bf0e6a4ed445b6d130b5"
+    },
+    {
+      "path": "policy_mve/router.py",
+      "sha256": "07a706587de11439a471c5be5bb893760f2c6234f5b480c83ee01607b451f5b9"
+    },
+    {
+      "path": "policy_mve/spec.py",
+      "sha256": "4c59fb47ec9dacf1edbff87685db049da1355e1acadab571fbf6005542a5c5bb"
+    },
+    {
+      "path": "policy_mve/verify.py",
+      "sha256": "6c59a249613b86f0457c450e9659655f611447796eb7ba6d99cc191f41fe6472"
+    },
+    {
+      "path": "policy_v3/__init__.py",
+      "sha256": "94de54f6cdee5d1a56c62efe2d6cc185773306349410e2c620612f514ad4e837"
+    },
+    {
+      "path": "policy_v3/analysis.py",
+      "sha256": "de855cad5bbed15613ee6ab09e7533f52cb7a318ef4c443296cd1f0f4d5b0bac"
+    },
+    {
+      "path": "policy_v3/budget.py",
+      "sha256": "e31a2fecb29e9bd772950ee106d63ff17b7664f9522c639381c550e8c53f7fb0"
+    },
+    {
+      "path": "policy_v3/core.py",
+      "sha256": "a847ca5bb82892c8e4e3e4d8aba750c622fcbab14340f707ce9943511571c577"
+    },
+    {
+      "path": "policy_v3/design.py",
+      "sha256": "81ae205e42105087be2bd147a678c229ce34f68c7c2e8543b67f83bbcfc694cc"
+    },
+    {
+      "path": "policy_v3/execution.py",
+      "sha256": "a4abbfaf7a747e7d86db57f97dee59b52e586f7495bd0f7e4edeac0f5854ab17"
+    },
+    {
+      "path": "policy_v3/interface.py",
+      "sha256": "5e4b4ce7d9614927638ca9e1dde815bfcd3abfd12356ce9b1958157bf600fbe8"
+    },
+    {
+      "path": "policy_v3/llm.py",
+      "sha256": "46bf56119366e628a9b2bc24894b27dd5a1c33ee22a06a3261632eafff13b900"
+    },
+    {
+      "path": "policy_v3/router.py",
+      "sha256": "308a872945ebcf331b8adf1064b05bd3bc1bf3004dba3e02c89a0251ba73d835"
+    },
+    {
+      "path": "policy_v3/runtime.py",
+      "sha256": "26235ddbf8b11f7cb53f9fc9a2cc3de23f5a60ca79c40a2280a48af69945ef7c"
+    },
+    {
+      "path": "policy_v3/scripted.py",
+      "sha256": "c1d2dee7b2b58783f3d3830d11047735320af79ec272a0242f6538807464f93e"
+    },
+    {
+      "path": "policy_v3/spec.py",
+      "sha256": "e59fd6daa28772ebc76bf7679f6708d6afa8162adba069279aae36d873726256"
+    },
+    {
+      "path": "policy_v3/verify.py",
+      "sha256": "449b25f6618c218cefa6d87aedf25558e7b908025ddc11bbf8a6e4cf092bd385"
+    },
+    {
+      "path": "tools/analyze_v3.py",
+      "sha256": "eafc1917ef2663c81ec3044419200c0eed215bac3177f8450ffaeafda0d338f5"
+    },
+    {
+      "path": "tools/build_v3_design.py",
+      "sha256": "140878777d937bf8e023d42d555676d455015537c1f66ff7d2e41267d6cfcc49"
+    },
+    {
+      "path": "tools/check_remote.py",
+      "sha256": "8bb6f7a51a998163b3a3901301cb615815f8e582e9d40886bbfc37d27ad7f9ab"
+    },
+    {
+      "path": "tools/collect_v3_records.py",
+      "sha256": "4b46d658e2edc355e1561eb9b1e9b10f35faa0b47b95d853a33ed043239e5327"
+    },
+    {
+      "path": "tools/configure_smoke.py",
+      "sha256": "da63ba18363aa57a43794f124f2b00a66600ec36f18020dce371710ff4d7ac1c"
+    },
+    {
+      "path": "tools/mve_budget.py",
+      "sha256": "2f1956eac571d3c96e4feae151f29c67e3fb39afa6422d5d436c52fc1c082244"
+    },
+    {
+      "path": "tools/mve_driver.py",
+      "sha256": "ed2a48905970064631e42ee7a262658fbfc1446b89eb9437d8235d030455577c"
+    },
+    {
+      "path": "tools/plot_v3.py",
+      "sha256": "665203a5ca3946ef801914f54f7752a8bb070fa0227eb918f2571cdc9ebb72a6"
+    },
+    {
+      "path": "tools/quote_mve.py",
+      "sha256": "629be271350b7266e66ed3bc9575baf46e02552d245e420afbce751cb7e1553c"
+    },
+    {
+      "path": "tools/quote_v3.py",
+      "sha256": "64d2157c5eec25d5488bb4ce461e974eee6bc7ba0233da5b252df1f17e337dfa"
+    },
+    {
+      "path": "tools/run_mve.py",
+      "sha256": "eee3aaba360f89bde33193bfaab2e1e654369d47767a2a7488aec616944a788f"
+    },
+    {
+      "path": "tools/run_mve_contract_probe.py",
+      "sha256": "d6b6f6690c3ed41c476e5bf96efbfd6a05965d87612912433c875c69c04eb109"
+    },
+    {
+      "path": "tools/run_mve_offline.py",
+      "sha256": "c9e5608706e6bdeb846ff6777af72705230e3fb637a4caa0c2225b333aead066"
+    },
+    {
+      "path": "tools/run_smoke.py",
+      "sha256": "3f9262df57bf532ef04bdf5d56f3907c6fa7c1ecc4c1248dbb3c60c9e336e7ea"
+    },
+    {
+      "path": "tools/run_v3.py",
+      "sha256": "dd10ca648ac2aeb9d0bd16019524e67b5e9530837b25665859ef45e49e29fda6"
+    },
+    {
+      "path": "tools/run_v3_batch.py",
+      "sha256": "f12bf80b7d5bf1fcbc6bd7815fab9986d432d71f66b0c5fbc8b3db6c36a621f7"
+    },
+    {
+      "path": "tools/run_v3_checks.py",
+      "sha256": "0bb2aff932d8e77486af5042c467943fd5c6cd777cdec62327549c20d4ee969d"
+    },
+    {
+      "path": "tools/run_v3_offline.py",
+      "sha256": "13c2f795b43d41a374d8099954ff4d54a38374da2268e0642b30dee4b92fe853"
+    },
+    {
+      "path": "tools/smoke_budget.py",
+      "sha256": "436ed337774af236f3fa1e209b109f259262e970ca88393802531859e9035668"
+    },
+    {
+      "path": "tools/smoke_driver.py",
+      "sha256": "4ac40c0422f8330c38a1358647a7c0f9e9a111c22503e8bb34ebf144e7706529"
+    },
+    {
+      "path": "tools/summarize_mve.py",
+      "sha256": "4990fcb6af73005c4d61a1ebfda6803ad147237399937a339e346971bfdd286f"
+    },
+    {
+      "path": "tools/sync_mve.py",
+      "sha256": "edc15eb7c181152e789c014a1a2429921d06d93055d725377043de4057444d12"
+    },
+    {
+      "path": "tools/sync_v3.py",
+      "sha256": "30d2f8cbf67ada772ae39a558d85cedd6764bf6aa9e993a67c5c620502cd0906"
+    },
+    {
+      "path": "tools/v3_driver.py",
+      "sha256": "a1fb558efca8d3865f0aebe8dfad99868c7dd47c528c68c71d1ce202f721c674"
+    },
+    {
+      "path": "tools/verify_mve.py",
+      "sha256": "49d122f31ac01c8d00f9faf5971e96e81e3a8cff71d427a9083350fb18a4a870"
+    },
+    {
+      "path": "tools/verify_smoke.py",
+      "sha256": "7fd3524ac23ea50e97d14bd2a6d0b914d91e1877566215530d11750d659a7d37"
+    },
+    {
+      "path": "tools/verify_v3.py",
+      "sha256": "56781d6554841aa0d8d7351765b1625e89bcd7739d2f4eea8bf2d8641d301e15"
+    }
+  ],
+  "unit_tests": {
+    "passed": true,
+    "tests_run": 228,
+    "failures": 0,
+    "errors": 0,
+    "report": "runs/v3-1-unit-final-20260910/unit-tests.json",
+    "log_sha256": "404fc56dab2cab891685d74a8640c5349a1bc7d7d5cca615b80504c545bb7423",
+    "optional_scipy_check": {
+      "status": "not_available"
+    }
+  },
+  "coverage": {
+    "passed": true,
+    "unique_scenarios": 94,
+    "stage_counts": {
+      "diagnostic": 3,
+      "pilot": 8,
+      "static": 33,
+      "order": 14,
+      "model_replicate": 4,
+      "sensitivity": 32
+    },
+    "report": "runs/v3-1-offline-coverage-20260910/validation.json",
+    "artifact_files_checked": 282,
+    "exact_state_replay_hashes_checked": 94
+  },
+  "historical_evidence": {
+    "files_checked": 253,
+    "unchanged": true
+  },
+  "api_requests": 0,
+  "cloud_source_synced": false,
+  "new_framework_execution_verified": false,
+  "new_real_model_execution_verified": false,
+  "limits": [
+    "Scripted coverage is not autonomous model behavior or evidence of real-world policy effects.",
+    "Optional installed SciPy comparison unavailable; no dependency installed.",
+    "Current cloud was observed Stopped; version 3.1 was not uploaded or run in the official cloud framework."
+  ],
+  "initial_failed_test_report": "runs/v3-1-unit-20260910/unit-tests.json",
+  "test_repairs": "Shared workspace temporary fixture replaces inaccessible Windows TemporaryDirectory; legacy tests now include lawful commissioning and delivery before acceptance. Production budget and business assertions remain."
+}

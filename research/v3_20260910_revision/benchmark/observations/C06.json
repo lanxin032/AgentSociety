@@ -1,0 +1,417 @@
+{
+  "actor_id": 1,
+  "available_actions": [
+    {
+      "kind": "route",
+      "params": {
+        "department": 2,
+        "use_recommendation": false
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "T:F3-1:0"
+    },
+    {
+      "kind": "route",
+      "params": {
+        "department": 2,
+        "use_recommendation": false
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "T:F2-3:0"
+    },
+    {
+      "kind": "route",
+      "params": {
+        "department": 3,
+        "use_recommendation": false
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "T:F1-3:0"
+    },
+    {
+      "kind": "route",
+      "params": {
+        "department": 2,
+        "use_recommendation": false
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "T:F2-2:0"
+    },
+    {
+      "kind": "route",
+      "params": {
+        "department": 2,
+        "use_recommendation": false
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "T:F1-2:0"
+    },
+    {
+      "kind": "route",
+      "params": {
+        "department": 3,
+        "use_recommendation": false
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "T:F3-1:0"
+    },
+    {
+      "kind": "route",
+      "params": {
+        "department": 2,
+        "use_recommendation": false
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "T:F1-3:0"
+    },
+    {
+      "kind": "route",
+      "params": {
+        "department": 3,
+        "use_recommendation": false
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "T:F1-2:0"
+    },
+    {
+      "kind": "route",
+      "params": {
+        "department": 2,
+        "use_recommendation": false
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "T:F3-2:0"
+    },
+    {
+      "kind": "wait",
+      "params": {},
+      "reason": "依据本人已获知材料选择",
+      "target": null
+    },
+    {
+      "kind": "route",
+      "params": {
+        "department": 3,
+        "use_recommendation": false
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "T:F3-3:0"
+    },
+    {
+      "kind": "route",
+      "params": {
+        "department": 3,
+        "use_recommendation": false
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "T:F2-2:0"
+    },
+    {
+      "kind": "route",
+      "params": {
+        "department": 3,
+        "use_recommendation": false
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "T:F3-2:0"
+    },
+    {
+      "kind": "route",
+      "params": {
+        "department": 3,
+        "use_recommendation": false
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "T:F1-1:0"
+    },
+    {
+      "kind": "route",
+      "params": {
+        "department": 3,
+        "use_recommendation": false
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "T:F2-3:0"
+    },
+    {
+      "kind": "route",
+      "params": {
+        "department": 2,
+        "use_recommendation": false
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "T:F1-1:0"
+    },
+    {
+      "kind": "route",
+      "params": {
+        "department": 2,
+        "use_recommendation": false
+      },
+      "reason": "依据本人已获知材料选择",
+      "target": "T:F3-3:0"
+    }
+  ],
+  "horizon": 30,
+  "inbox": [],
+  "last_receipt": {
+    "action_kind": "wait",
+    "code": "waited",
+    "resources_paid": {
+      "capital": 0,
+      "crew": 0,
+      "labor": 0
+    },
+    "round": 17,
+    "status": "executed",
+    "target": null
+  },
+  "projects": [],
+  "public_rules": {
+    "budget": "审批授权额度不预留施工资源；实际执行仍竞争共同资金和施工容量。",
+    "case_workflow": "派单后主办部门调查；普通联系、回复和进度报告合法可用。联合清单需本人确认才激活共享；未确认仍可依法普通办理。作业依赖与资源对所有流程相同，技术交接须有已送达的合法完成回执。",
+    "communication": "消息结算后在下一轮送达；手动联系/请求/回复计通信劳动，平台同步不重复收人工发送费用。",
+    "costs": {
+      "case_work_capital": 0.5,
+      "communication_cost": 0.2,
+      "decision_cost": 0.1,
+      "inspect_cost": 1.0,
+      "maintenance_cost": 0.1,
+      "project_accept_cost": 0.5,
+      "project_diagnosis_cost": 2.0,
+      "project_proposal_cost": 1.0,
+      "project_step_capital": 3.0,
+      "project_work_cost": 2.0,
+      "recommendation_cost": 0.2,
+      "review_cost": 0.5,
+      "route_cost": 0.5,
+      "setup_cost": 0.5,
+      "work_cost": 1.0
+    },
+    "directory": {
+      "2": "供水及机泵作业、供水专业评审",
+      "3": "基础设施及接口作业、工程专业评审",
+      "4": "专项组织、调查、拟案、预算申请和验收申请"
+    },
+    "evidence_standard": "共同根源拟案须有可核查现场材料；专业意见由部门自主给出，可以错误。预算只审查申请数额、意见是否齐备与当前资金，不认定真实根因。验收另核对真实物理条件。",
+    "ordinary_channel": "普通流程可分别联系、取得反馈、完成协调和源头项目，不丧失法定办理能力。",
+    "project_lag": 2,
+    "project_steps": 2,
+    "project_template": {
+      "construction": [
+        {
+          "department": 3,
+          "predecessor_department": null
+        },
+        {
+          "department": 2,
+          "predecessor_department": 3
+        }
+      ],
+      "note": "Public proposed-plan template only; it does not establish a shared defect or a correct intervention.",
+      "plan": "replace_shared_main",
+      "reviews": [
+        2,
+        3
+      ]
+    },
+    "project_workflow": "专项负责人自愿立项、确认主责、现场调查及拟案；部门2和3作专业评审；负责人收到意见后申请预算；部门执行两个施工分项，按技术前提交接；负责人取得回执后等待技术时滞并申请验收。有依据可撤项，已耗资源不退。",
+    "shared_channel": "联合/专项支持可归集已有授权记录、本人确认及同步执行回执；需要建立和维护成本，不生成专业判断、不保证更新成功或提高物理成功率。"
+  },
+  "resources": {
+    "capital": 20.0,
+    "own_labor": 96.4,
+    "shared_crew_remaining": 2
+  },
+  "role": "受理派单员",
+  "round": 18,
+  "schema_version": "policy-v3-3.0",
+  "sent_messages": [],
+  "spec_version": "policy-v3-3.0",
+  "topics": [],
+  "visible_tickets": [
+    {
+      "a_offered": false,
+      "a_opportunity": "A:F1-1@0",
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区1",
+      "facility": "F1-1",
+      "id": "T:F1-1:0",
+      "lead": null,
+      "public_episode": "居民记录:F1-1:0",
+      "reported": 0,
+      "text": "用水服务异常，附近情况不明，请有关单位核实处理"
+    },
+    {
+      "a_offered": false,
+      "a_opportunity": "A:F1-2@0",
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区1",
+      "facility": "F1-2",
+      "id": "T:F1-2:0",
+      "lead": null,
+      "public_episode": "居民记录:F1-2:0",
+      "reported": 0,
+      "text": "用水服务异常，附近情况不明，请有关单位核实处理"
+    },
+    {
+      "a_offered": false,
+      "a_opportunity": "A:F1-3@0",
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区1",
+      "facility": "F1-3",
+      "id": "T:F1-3:0",
+      "lead": null,
+      "public_episode": "居民记录:F1-3:0",
+      "reported": 0,
+      "text": "用水服务异常，附近情况不明，请有关单位核实处理"
+    },
+    {
+      "a_offered": false,
+      "a_opportunity": "A:F2-1@0",
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区2",
+      "facility": "F2-1",
+      "id": "T:F2-1:0",
+      "lead": 3,
+      "public_episode": "居民记录:F2-1:0",
+      "reported": 0,
+      "text": "供水泵及基础接口均需核实处理"
+    },
+    {
+      "a_offered": false,
+      "a_opportunity": "A:F2-2@0",
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区2",
+      "facility": "F2-2",
+      "id": "T:F2-2:0",
+      "lead": null,
+      "public_episode": "居民记录:F2-2:0",
+      "reported": 0,
+      "text": "供水泵及基础接口均需核实处理"
+    },
+    {
+      "a_offered": false,
+      "a_opportunity": "A:F2-3@0",
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区2",
+      "facility": "F2-3",
+      "id": "T:F2-3:0",
+      "lead": null,
+      "public_episode": "居民记录:F2-3:0",
+      "reported": 0,
+      "text": "供水泵及基础接口均需核实处理"
+    },
+    {
+      "a_offered": false,
+      "a_opportunity": "A:F3-1@0",
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区3",
+      "facility": "F3-1",
+      "id": "T:F3-1:0",
+      "lead": null,
+      "public_episode": "居民记录:F3-1:0",
+      "reported": 0,
+      "text": "供水泵及基础接口均需核实处理"
+    },
+    {
+      "a_offered": false,
+      "a_opportunity": "A:F3-2@0",
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区3",
+      "facility": "F3-2",
+      "id": "T:F3-2:0",
+      "lead": null,
+      "public_episode": "居民记录:F3-2:0",
+      "reported": 0,
+      "text": "供水泵及基础接口均需核实处理"
+    },
+    {
+      "a_offered": false,
+      "a_opportunity": "A:F3-3@0",
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区3",
+      "facility": "F3-3",
+      "id": "T:F3-3:0",
+      "lead": null,
+      "public_episode": "居民记录:F3-3:0",
+      "reported": 0,
+      "text": "用水服务异常，附近情况不明，请有关单位核实处理"
+    },
+    {
+      "a_offered": false,
+      "a_opportunity": "A:F4-1@0",
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区4",
+      "facility": "F4-1",
+      "id": "T:F4-1:0",
+      "lead": 3,
+      "public_episode": "居民记录:F4-1:0",
+      "reported": 0,
+      "text": "基础设施接口破损影响供水"
+    },
+    {
+      "a_offered": false,
+      "a_opportunity": "A:F4-2@0",
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区4",
+      "facility": "F4-2",
+      "id": "T:F4-2:0",
+      "lead": 3,
+      "public_episode": "居民记录:F4-2:0",
+      "reported": 0,
+      "text": "用水服务异常，附近情况不明，请有关单位核实处理"
+    },
+    {
+      "a_offered": false,
+      "a_opportunity": "A:F4-3@0",
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区4",
+      "facility": "F4-3",
+      "id": "T:F4-3:0",
+      "lead": 3,
+      "public_episode": "居民记录:F4-3:0",
+      "reported": 0,
+      "text": "用水服务异常，附近情况不明，请有关单位核实处理"
+    },
+    {
+      "a_offered": false,
+      "a_opportunity": "A:F4-1@6",
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区4",
+      "facility": "F4-1",
+      "id": "T:F4-1:6",
+      "lead": 3,
+      "public_episode": "居民记录:F4-1:6",
+      "reported": 6,
+      "text": "基础设施接口破损影响供水"
+    },
+    {
+      "a_offered": false,
+      "a_opportunity": "A:F4-1@13",
+      "category": "供水服务异常",
+      "closed": false,
+      "district": "片区4",
+      "facility": "F4-1",
+      "id": "T:F4-1:13",
+      "lead": 3,
+      "public_episode": "居民记录:F4-1:13",
+      "reported": 13,
+      "text": "基础设施接口破损影响供水"
+    }
+  ],
+  "zero_communication_friction": false
+}
