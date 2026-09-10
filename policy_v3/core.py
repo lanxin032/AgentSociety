@@ -8,6 +8,7 @@ import hashlib
 import json
 import math
 from .interface import decorate_observation
+from .project_lifecycle import ProjectLifecycle, activate_due_projects
 
 from .spec import (ACTORS, ACTION_PARAM_KEYS, ALLOWED_KINDS, COMMUNICATION_KINDS,
                    DEFAULT_CONFIG, ENVIRONMENTS, PUBLIC_RULES, SCHEMA_VERSION, SPEC_VERSION)
@@ -332,20 +333,10 @@ class PolicyWorld:
             # supersedes a later pending template for the same revision.
             if prior is None or view["revision"] > prior["revision"] or (view["revision"] == prior["revision"] and (prior["state"] == "pending" or view["as_of_round"] >= prior["as_of_round"])):
                 self.knowledge[str(actor)]["tasks"][view["id"]] = deepcopy(view)
-            if actor == 4 and record["object"] in self.projects and view["kind"] == "implement_project":
+            if actor == 4 and record["object"] in self.projects and (view["kind"] == "implement_project" or record["kind"] == "commissioning_result"):
                 project = self.projects[record["object"]]
-                if view["revision"] == project["revision"] and project["state"] not in ("completed", "failed", "cancelled"):
-                    construction = [v for v in self.knowledge["4"]["tasks"].values() if v["object"] == project["id"] and v["revision"] == project["revision"] and v["kind"] == "implement_project"]
-                    known_commission = [r for r in self._legal_records(4, project["id"]) if r["kind"] == "commissioning_result" and r["data"]["revision"] == project["revision"]]
-                    project["state"] = ("awaiting_acceptance" if known_commission[-1]["data"]["success"] else "commissioning_failed") if known_commission else "building"
-                    if len(construction) == 2 and all(v["state"] == "completed" for v in construction):
-                        project["ready_round"] = max(v["completed_round"] for v in construction) + self.config["project_lag"]
-                        if not known_commission:
-                            project["state"] = "awaiting_commissioning"
-            if actor == 4 and record["kind"] == "commissioning_result":
-                project = self.projects[record["object"]]
-                if view["revision"] == project["revision"] and project["state"] not in ("completed", "failed", "cancelled"):
-                    project["state"] = "awaiting_acceptance" if record["data"]["success"] else "commissioning_failed"
+                self._project_lifecycle(project).receive_owner_record(
+                    record, self.knowledge["4"]["tasks"], self._legal_records(4, project["id"]))
 
     def _payload(self, actor, oid):
         # Forward only material the sender actually holds, preserving authorship.
@@ -866,8 +857,8 @@ class PolicyWorld:
                 self._record(oid, actor, "capacity_obstacle", {"task": target, "reason": "insufficient_work_resources", "as_of_round": self.round})
                 return False, "insufficient_work_labor_capital_or_crew"
             if project:
-                project["construction"] = "in_progress"
-                project["capital_spent"] = round(project["capital_spent"] + capital, 8)
+                return self._project_lifecycle(project).complete_construction(
+                    actor, task, capital, self.knowledge[str(actor)]["tasks"])
         task["state"], task["completed_round"] = "completed", self.round
         self.knowledge[str(actor)]["tasks"][target] = self._task_view(task)
         self._record(oid, actor, "review_completed" if kind == "review_project" else "task_completed", {"task": self._task_view(task), "capital_spent": 0 if kind == "review_project" else capital})
@@ -882,44 +873,22 @@ class PolicyWorld:
                 if bop:
                     self.opportunities[bop]["closed"] = True
                 self._log("issue_resolved", issue=issue["id"], ticket=oid, resolved_round=self.round + 1, source="individual_tasks")
-        elif kind == "implement_project":
-            construction = [self.tasks[t["id"]] for t in self._project_definitions(oid, "implement_project")]
-            if all(t["state"] == "completed" for t in construction):
-                # This physical time is kept private until the owner obtains the receipts.
-                project["construction"], project["built_at"] = "built", self.round
-                project["physical_ready_round"] = self.round + self.config["project_lag"]
-                self._log("project_built", project=oid, built_at=self.round, revision=project["revision"])
         return True, "professional_opinion_recorded" if kind == "review_project" else "work_completed"
 
+    def _project_lifecycle(self, project):
+        # Ephemeral: preserve the existing checkpoint dictionaries and schema.
+        tasks = {key: task for key, task in self.tasks.items() if task["object"] == project["id"]}
+        return ProjectLifecycle(project, tasks, self.round, self.config["project_lag"],
+                                pay=self._pay, record=self._record, log=self._log,
+                                task_view=self._task_view, close_topic=self.topic_terminal.__setitem__)
+
     def _commission_action(self, actor, task, project):
-        if actor != 2 or project is None or project["budget_approved"] is None:
+        if actor != 2 or project is None:
             return False, "commissioning_authorization_missing"
-        for prerequisite in task["prerequisites"]:
-            received = self.knowledge[str(actor)]["tasks"].get(prerequisite)
-            if self.tasks[prerequisite]["state"] != "completed" or not received or received["state"] != "completed":
-                return False, "prerequisites_or_received_handoff_missing"
-        ready = max(self.tasks[t]["completed_round"] for t in task["prerequisites"]) + self.config["project_lag"]
-        if self.round < ready:
-            return False, "commissioning_readiness_lag_not_elapsed"
-        if not self._pay(actor, self.config["project_commission_cost"], reason="commission_project", oid=project["id"]):
-            self._record(project["id"], actor, "capacity_obstacle", {"task": task["id"], "reason": "insufficient_commissioning_labor", "as_of_round": self.round})
-            return False, "insufficient_commissioning_labor"
-        facilities = [self.facilities[fid] for fid in project["facilities"]]
-        matching = (len(facilities) >= 3 and len({f["root"] for f in facilities}) == 1
-                    and all(f["shared_root"] and not f["root_repaired"] for f in facilities))
-        task["state"], task["completed_round"] = "completed", self.round
-        project["commissioned_at"] = self.round
-        project["physical"] = "commissioned_pending_effect" if matching else "commissioning_failed"
-        project["effective_at"] = self.round + 1 if matching else None
-        data = {"task": self._task_view(task), "revision": project["revision"], "success": matching,
-                "effective_at": project["effective_at"], "commissioned_at": self.round,
-                "code": "technical_commissioning_succeeded" if matching else "physical_intervention_not_matched"}
-        project["commissioning_assessment"] = deepcopy(data)
-        self._record(project["id"], actor, "commissioning_result", data)
-        self._log("project_commissioned" if matching else "project_commissioning_failed", project=project["id"],
-                  task=task["id"], revision=project["revision"], effective_at=project["effective_at"],
-                  commissioned_at=self.round, success=matching, facilities=project["facilities"])
-        return matching, data["code"]
+        return self._project_lifecycle(project).commission(
+            actor, task, self.knowledge[str(actor)]["tasks"],
+            [self.facilities[fid] for fid in project["facilities"]],
+            self.config["project_commission_cost"])
 
     def _project_action(self, actor, kind, target, params):
         if kind == "confirm_project_task":
@@ -1063,36 +1032,13 @@ class PolicyWorld:
             self._log("project_adjusted", project=target, paused=paused, reason=params["reason_code"])
             return True, "project_execution_plan_adjusted_without_resource_bonus"
         if kind == "accept_project":
-            successes = [r for r in self._legal_records(actor, target) if r["kind"] == "commissioning_result"
-                         and r["data"]["revision"] == project["revision"] and r["data"]["success"]]
-            if not successes:
-                return False, "commissioning_success_receipt_not_received"
-            expected = self._project_definitions(target, "implement_project")
-            views = self.knowledge["4"]["tasks"]
-            if project["budget_approved"] is None or self._received_reviews(4, project) != {2: "approve", 3: "approve"} or len(expected) != 2 or not all(views.get(t["id"], {}).get("state") == "completed" for t in expected):
-                return False, "administrative_documentation_incomplete"
-            # Administrative acceptance cannot precede the fixed physical boundary.
-            if self.round < successes[-1]["data"]["effective_at"]:
-                return False, "commissioning_effect_boundary_not_reached"
-            if not self._pay(actor, self.config["project_accept_cost"], reason=kind, oid=target):
-                return False, "insufficient_acceptance_labor"
-            project["accepted_at"] = self.round
-            self._terminate_project(project, "completed")
-            self._log("project_completed", project=target, facilities=project["facilities"],
-                      accepted_at=self.round, effective_at=project["effective_at"], source="administrative_verification")
-            return True, "administrative_acceptance_recorded_without_physical_change"
+            return self._project_lifecycle(project).accept(
+                self._legal_records(actor, target), self.knowledge["4"]["tasks"],
+                self._received_reviews(4, project), self.config["project_accept_cost"])
         return False, "unsupported_project_action"
 
     def _terminate_project(self, project, state):
-        project["state"] = state
-        project["administrative"] = "accepted" if state == "completed" else state
-        if state == "cancelled":
-            project["cancelled_at"] = self.round
-        self.topic_terminal[project["topic"]] = self.round
-        for task in self.tasks.values():
-            if task["object"] == project["id"] and task["state"] == "pending":
-                task["state"] = "cancelled"
-        self._record(project["id"], 4, "project_terminal", {"state": state})
+        self._project_lifecycle(project).terminate(state)
 
     def advance(self):
         if self.round >= self.horizon:
@@ -1113,13 +1059,7 @@ class PolicyWorld:
         self._log("round_completed", completed_round=self.round + 1, settlement_unresolved=unresolved,
                   unresolved=unresolved, cumulative_issue_burden=sum(self.burden_by_round))
         self.round += 1
-        for project in self.projects.values():
-            if project["physical"] == "commissioned_pending_effect" and project["effective_at"] <= self.round:
-                project["physical"] = "effective"
-                for fid in project["facilities"]:
-                    self.facilities[fid]["root_repaired"] = True
-                self._log("physical_effect_activated", project=project["id"], facilities=project["facilities"],
-                          effective_at=project["effective_at"], revision=project["revision"])
+        activate_due_projects(self.projects.values(), self.facilities, self.round, self._log)
         self.crew_remaining = self.config["shared_crew_capacity"]
         self._deliver_due()
         self._refresh_offers()

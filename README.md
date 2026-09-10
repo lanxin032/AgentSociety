@@ -44,6 +44,10 @@ not grant a new experiment budget. Existing paid runners retain their budget,
 authorization and loopback-proxy requirements; `.env` does not replace their
 separate `.env.smoke` configuration or budget ledger.
 
+## Code navigation
+
+Start with [the architecture map](ARCHITECTURE.md) for shared execution and project lifecycle responsibilities, and [the domain glossary](CONTEXT.md) for the research terms.
+
 ## GitHub source distribution
 
 This repository contains the canonical source, tests, selected research protocols,

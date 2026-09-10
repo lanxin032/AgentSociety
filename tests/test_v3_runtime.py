@@ -111,7 +111,7 @@ class V3ManifestTests(OrdinaryFixture, unittest.TestCase):
         self.make_fixture()
 
     def test_manifest_covers_python_dependencies_and_excludes_secrets_reports(self):
-        included = ["policy_v3/runtime.py", "policy_mve/llm.py", "custom/agents/officer.py", "tools/driver.py"]
+        included = ["policy_v3/runtime.py", "policy_mve/llm.py", "policy_runtime/checkpoints.py", "custom/agents/officer.py", "tools/driver.py"]
         excluded = [".env.smoke", "policy_v3/settings.json", "tools/notes.md", "runs/budget.json", "custom/__pycache__/old.py"]
         for relative in included + excluded:
             path = self.fixture / relative
@@ -153,10 +153,19 @@ class CanonicalSyncTests(OrdinaryFixture, unittest.TestCase):
             with self.subTest(module=module.__name__):
                 source = self.fixture / module.__name__.split(".")[-1]
                 target = source / "cloud"
-                for directory in ("tools", "tests", "custom", package):
+                for directory in ("tools", "tests", "custom", "policy_runtime", package):
                     (source / directory).mkdir(parents=True)
                 relative = package + "/fixture.py"
                 (source / relative).write_text("new source", encoding="utf-8")
+                shared_sources = {"policy_runtime/checkpoints.py": "shared checkpoint code",
+                                  "tools/mve_driver.py": "MVE caller", "tools/v3_driver.py": "V3 caller"}
+                if module is sync_v3:
+                    (source / "policy_mve").mkdir(exist_ok=True)
+                    shared_sources["policy_mve/io.py"] = "existing shared I/O"
+                    (source / "tests/data").mkdir()
+                    shared_sources["tests/data/project_lifecycle_v3_1.json"] = "{}"
+                for name, contents in shared_sources.items():
+                    (source / name).write_text(contents, encoding="utf-8")
                 (target / package).mkdir(parents=True)
                 (target / relative).write_text("unreviewed source", encoding="utf-8")
                 expected = source / "expected.json"
@@ -172,7 +181,10 @@ class CanonicalSyncTests(OrdinaryFixture, unittest.TestCase):
                 with redirect_stdout(io.StringIO()):
                     exec(compile(script, "guarded-sync-fixture", "exec"), {})
                 self.assertEqual((target / relative).read_text(), "new source")
-                self.assertEqual([p.relative_to(target).as_posix() for p in target.rglob("*") if p.is_file()], [relative])
+                self.assertEqual({p.relative_to(target).as_posix() for p in target.rglob("*") if p.is_file()},
+                                 {relative, *shared_sources})
+                for name, contents in shared_sources.items():
+                    self.assertEqual((target / name).read_text(), contents)
 
 
 class V3StageBudgetTests(OrdinaryFixture, unittest.TestCase):

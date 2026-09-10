@@ -3,7 +3,6 @@ import argparse
 import asyncio
 from datetime import datetime
 import importlib.metadata
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -12,45 +11,8 @@ import traceback
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from policy_mve.io import read_json, write_json, digest, source_manifest
-
-
-def checkpoint_files(run_dir):
-    paths = [run_dir / name for name in ["SOCIETY.json", "SOCIETY_STEP.json", "world.json", "metrics.json", "run_config.json"]]
-    paths += list((run_dir / "env").rglob("*.json"))
-    for path in (run_dir / "agents").rglob("*.json"):
-        if path.name in {"AGENT.json", "config.json", "business.json"}:
-            paths.append(path)
-    paths += list(run_dir.glob("*.jsonl"))
-    paths += list((run_dir / "agents").rglob("decisions.jsonl"))
-    return {p.relative_to(run_dir).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(paths)}
-
-
-def validate_commit(run_dir):
-    committed = read_json(run_dir / "committed.json")
-    if committed["files"] != checkpoint_files(run_dir):
-        raise RuntimeError("Checkpoint set changed or was only partially persisted")
-    if digest(read_json(run_dir / "world.json")) != committed["world_sha256"]:
-        raise RuntimeError("World does not match committed checkpoint")
-    return committed
-
-
-def validate_round_state(run_dir, count):
-    if read_json(run_dir / "SOCIETY_STEP.json")["step_count"] != count:
-        raise RuntimeError("Society did not persist the completed round")
-    agent_files = sorted((run_dir / "agents").glob("*/AGENT.json"))
-    if len(agent_files) != 4:
-        raise RuntimeError("Expected exactly four actor checkpoints")
-    ids = set()
-    for path in agent_files:
-        meta = read_json(path)
-        actor_id = meta.get("agent_id", meta.get("id"))
-        if actor_id not in {1, 2, 3, 4} or actor_id in ids or meta.get("step_count") != count:
-            raise RuntimeError("Actor checkpoint identity or round mismatch")
-        ids.add(actor_id)
-        business = read_json(path.parent / "state/business.json")
-        if not business.get("history") or business["history"][-1]["round"] != count - 1:
-            raise RuntimeError("Actor business state is not from the completed round")
+from policy_mve.io import read_json, write_json, source_manifest
+from policy_runtime.checkpoints import commit_round, validate_commit
 
 
 async def run(args, report):
@@ -123,16 +85,8 @@ async def run(args, report):
         for _ in range(args.steps):
             await society.run(num_steps=1, tick=60)
             count = society.step_count
-            entries = [x for x in report.get("agent_results", []) if x["round"] == count - 1]
-            if len(entries) != 4 or {x["actor_id"] for x in entries} != {1, 2, 3, 4}:
-                raise RuntimeError("Missing or duplicate actor results")
             snapshot = await actor.owner_snapshot.remote()
-            world_disk = read_json(args.run_dir / "world.json")
-            if digest(snapshot) != digest(world_disk):
-                raise RuntimeError("Persisted environment does not match live actor")
-            validate_round_state(args.run_dir, count)
-            checkpoints = {"round": count, "world_sha256": digest(snapshot), "files": checkpoint_files(args.run_dir)}
-            write_json(args.run_dir / "committed.json", checkpoints)
+            commit_round(args.run_dir, count, snapshot, report.get("agent_results", []))
             print(json.dumps({"completed_round": count, "metrics": await actor.owner_metrics.remote()}, ensure_ascii=False), flush=True)
         report["completed_steps"] = society.step_count
         report["metrics"] = await actor.owner_metrics.remote()

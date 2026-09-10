@@ -834,7 +834,7 @@ def audit_execution_receipts(run_dir, frozen, committed_round, observations, adv
 
 def verify_run(run_dir, root=None):
     """Read a committed official run without modifying any run evidence."""
-    from tools.v3_driver import validate_commit, validate_round_state
+    from policy_runtime.checkpoints import validate_commit
     from policy_v3.runtime import MODEL_SETTINGS, code_manifest
     run_dir = Path(run_dir)
     verifier_root = Path(__file__).resolve().parents[1]
@@ -849,7 +849,6 @@ def verify_run(run_dir, root=None):
         committed = validate_commit(run_dir)
         frozen = _read(run_dir / 'run_config.json')
         state = _read(run_dir / 'world.json')
-        validate_round_state(run_dir, committed['round'])
         if frozen.get('version') != VERSION:
             errors.append('Frozen configuration is not V3')
         if frozen.get('code_manifest') != code_manifest(root):

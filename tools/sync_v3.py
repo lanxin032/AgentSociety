@@ -13,11 +13,15 @@ def main():
     args = parser.parse_args()
     expected = json.loads(args.expected.read_text(encoding="utf-8-sig"))
     expected = expected.get("hashes", expected)
-    selected = [p for folder in ("policy_v3", "custom", "research/v3_20260909")
+    selected = [p for folder in ("policy_v3", "policy_mve", "policy_runtime", "custom", "research/v3_20260909")
                 for p in (root / folder).rglob("*")
                 if p.is_file() and p.suffix in {".py", ".md", ".json"}]
-    selected += [p for p in (root / "tools").glob("*.py") if "v3" in p.name or p.name == "smoke_budget.py"]
+    # Match the runtime source manifest, including shared and MVE driver code.
+    selected += list((root / "tools").rglob("*.py"))
     selected += list((root / "tests").glob("test_v3*.py"))
+    selected += [p for p in (root / "tests").glob("*.py")
+                 if p.name in {"test_checkpoints.py", "test_policy_runtime.py", "test_framework_adapters.py", "fixtures.py"}]
+    selected += list((root / "tests" / "data").glob("*.json"))
     payload = []
     for path in sorted(set(selected)):
         rel = path.relative_to(root).as_posix()

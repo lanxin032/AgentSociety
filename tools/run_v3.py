@@ -17,7 +17,7 @@ from policy_v3.runtime import select_run, code_manifest, MODEL_SETTINGS
 from policy_v3.spec import SPEC_VERSION
 from policy_v3.execution import (AttemptRegistry, ExecutionError, check_deadline,
                                  validate_authorization, file_hash)
-from tools.v3_driver import validate_commit
+from policy_runtime.checkpoints import validate_commit
 from tools.smoke_budget import BudgetProxy, LOCAL_KEY, ControllerLock
 
 

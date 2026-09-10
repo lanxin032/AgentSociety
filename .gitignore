@@ -80,3 +80,8 @@ __pycache__/
 *_authorization_APPROVED.json
 *_user_approval.json
 node_modules/
+
+# Shared execution modules and the domain glossary
+!/policy_runtime/
+!/CONTEXT.md
+!/ARCHITECTURE.md

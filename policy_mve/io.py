@@ -40,7 +40,7 @@ def append_jsonl(path, value):
 def source_manifest(root):
     root = Path(root)
     files = []
-    for folder in ["policy_mve", "custom", "tools", "research/mve_20260909"]:
+    for folder in ["policy_mve", "policy_runtime", "custom", "tools", "research/mve_20260909"]:
         for path in sorted((root / folder).rglob("*")):
             if path.is_file() and path.suffix in {".py", ".json", ".md"} and "__pycache__" not in path.parts:
                 files.append({"path": path.relative_to(root).as_posix(), "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})

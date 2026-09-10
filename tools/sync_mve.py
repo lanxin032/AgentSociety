@@ -20,10 +20,13 @@ def main():
     # Verified cloud source before this implementation, not a blanket overwrite.
     expected.setdefault("tools/smoke_budget.py", "091c7ea9f7a9015c7338ff320e4a6e618eab9b73e707a584fcccc1918e5d399b")
     payload = []
-    folders = ["policy_mve", "custom", "research/mve_20260909"]
+    folders = ["policy_mve", "policy_runtime", "custom", "research/mve_20260909"]
     paths = [p for name in folders for p in (root / name).rglob("*") if p.is_file() and p.suffix in {".py", ".json", ".md"}]
-    paths += [p for p in (root / "tools").glob("*.py") if "mve" in p.name or p.name == "smoke_budget.py"]
-    paths += [p for p in (root / "tests").glob("test_*.py") if "mve" in p.name or "policy" in p.name]
+    # The frozen source manifest hashes all Python tools, including callers of
+    # shared runtime modules. Upload that same set instead of filtering names.
+    paths += list((root / "tools").rglob("*.py"))
+    paths += [p for p in (root / "tests").glob("*.py")
+              if "mve" in p.name or "policy" in p.name or p.name in {"test_checkpoints.py", "fixtures.py"}]
     for path in sorted(set(paths)):
         rel = path.relative_to(root).as_posix()
         data = path.read_bytes()

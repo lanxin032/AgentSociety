@@ -148,7 +148,7 @@ class VerifyTests(unittest.TestCase):
 
     def make_run(self, mode='scripted'):
         from policy_v3.runtime import code_manifest, MODEL_SETTINGS
-        from tools.v3_driver import checkpoint_files
+        from policy_runtime.checkpoints import commit_round
         state = fixture_state()
         run = self.tmp / 'run'
         run.mkdir()
@@ -167,7 +167,7 @@ class VerifyTests(unittest.TestCase):
             (actor_dir / 'state').mkdir(parents=True)
             write(actor_dir / 'AGENT.json', {'agent_id': actor, 'step_count': 2})
             write(actor_dir / 'state/business.json', {'history': [{'round': 1}]})
-        write(run / 'committed.json', {'round': 2, 'world_sha256': _hash(state), 'files': checkpoint_files(run)})
+        commit_round(run, 2, state, [{'round': 1, 'actor_id': actor} for actor in range(1, 5)])
         write(run / 'driver_latest.json', {'version': VERSION, 'mode': mode, 'source_manifest': frozen['code_manifest'],
               'ok': True, 'ray_shutdown': True, 'completed_steps': 2})
         receipt = {'version': VERSION, 'mode': mode, 'source_manifest': frozen['code_manifest'], 'model_settings': MODEL_SETTINGS,

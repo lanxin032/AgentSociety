@@ -14,9 +14,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from tests.fixtures import WorkspaceTemporaryDirectory
-from policy_mve.io import append_jsonl, digest, write_json
 from policy_mve.llm import BoundedClient, MODEL, choose_action, parse_object, validate_action
-from mve_driver import checkpoint_files, validate_commit, validate_round_state
 
 
 def response(text):
@@ -110,89 +108,6 @@ class DecisionTests(unittest.IsolatedAsyncioTestCase):
                 with self.assertRaises(ValueError):
                     await BoundedClient(base).call(MODEL, [])
                 upstream.assert_not_called()
-
-
-class CommitTests(unittest.TestCase):
-    def setUp(self):
-        self.directory = WorkspaceTemporaryDirectory()
-        self.addCleanup(self.directory.cleanup)
-        self.run_dir = Path(self.directory.name)
-        self.world = {"round": 1, "cases": [{"id": "case-1", "resolved": False}]}
-        for name, value in {
-            "SOCIETY.json": {"agent_ids": [1, 2, 3, 4]},
-            "SOCIETY_STEP.json": {"step_count": 1}, "world.json": self.world,
-            "metrics.json": {"resolved": 0}, "run_config.json": {"mode": "scripted"},
-            "env/PolicyCaseEnv/state/ENV_STATE.json": self.world,
-            "env/PolicyCaseEnv/router.json": {"round": 1},
-        }.items():
-            write_json(self.run_dir / name, value)
-        for identifier in (1, 2, 3, 4):
-            folder = self.run_dir / "agents" / f"agent_{identifier:04d}"
-            write_json(folder / "AGENT.json", {"id": identifier, "step_count": 1})
-            write_json(folder / "config.json", {"decision_mode": "scripted"})
-            write_json(folder / "state/business.json", {"history": [{"round": 0}]})
-            append_jsonl(folder / "decisions.jsonl", {"round": 0, "kind": "wait"})
-        append_jsonl(self.run_dir / "actions.jsonl", {"round": 0, "actor_id": 1})
-        self.committed = {"round": 1, "world_sha256": digest(self.world), "files": checkpoint_files(self.run_dir)}
-        write_json(self.run_dir / "committed.json", self.committed)
-
-    def test_intact_checkpoint_validates(self):
-        self.assertEqual(validate_commit(self.run_dir), self.committed)
-        validate_round_state(self.run_dir, 1)
-
-    def test_round_validation_rejects_stale_society(self):
-        write_json(self.run_dir / "SOCIETY_STEP.json", {"step_count": 0})
-        with self.assertRaises(RuntimeError):
-            validate_round_state(self.run_dir, 1)
-
-    def test_round_validation_rejects_duplicate_identity_and_stale_actor(self):
-        path = self.run_dir / "agents/agent_0004/AGENT.json"
-        for state in ({"id": 1, "step_count": 1}, {"id": 4, "step_count": 0}):
-            write_json(path, state)
-            with self.subTest(state=state), self.assertRaises(RuntimeError):
-                validate_round_state(self.run_dir, 1)
-
-    def test_round_validation_rejects_missing_actor(self):
-        (self.run_dir / "agents/agent_0004/AGENT.json").unlink()
-        with self.assertRaises(RuntimeError):
-            validate_round_state(self.run_dir, 1)
-
-    def test_round_validation_rejects_stale_business_history(self):
-        for history in ([], [{"round": -1}]):
-            write_json(self.run_dir / "agents/agent_0004/state/business.json", {"history": history})
-            with self.subTest(history=history), self.assertRaises(RuntimeError):
-                validate_round_state(self.run_dir, 1)
-
-    def test_world_tampering_rejected(self):
-        write_json(self.run_dir / "world.json", {"round": 2})
-        with self.assertRaises(RuntimeError):
-            validate_commit(self.run_dir)
-
-    def test_each_actor_checkpoint_tampering_rejected(self):
-        for identifier in (1, 2, 3, 4):
-            path = self.run_dir / "agents" / f"agent_{identifier:04d}" / "AGENT.json"
-            original = path.read_bytes()
-            try:
-                write_json(path, {"id": identifier, "step_count": 0})
-                with self.subTest(identifier=identifier), self.assertRaises(RuntimeError):
-                    validate_commit(self.run_dir)
-            finally:
-                path.write_bytes(original)
-
-    def test_event_tail_append_rejected(self):
-        append_jsonl(self.run_dir / "actions.jsonl", {"round": 1, "actor_id": 1})
-        with self.assertRaises(RuntimeError):
-            validate_commit(self.run_dir)
-
-    def test_agent_decision_tail_append_rejected(self):
-        append_jsonl(self.run_dir / "agents/agent_0002/decisions.jsonl", {"round": 1})
-        with self.assertRaises(RuntimeError):
-            validate_commit(self.run_dir)
-
-    def test_missing_checkpoint_rejected(self):
-        (self.run_dir / "agents/agent_0004/AGENT.json").unlink()
-        with self.assertRaises(RuntimeError):
-            validate_commit(self.run_dir)
 
 
 if __name__ == "__main__":

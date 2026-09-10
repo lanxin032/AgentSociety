@@ -1,6 +1,4 @@
 import asyncio
-import ast
-import copy
 from copy import deepcopy
 import json
 from pathlib import Path
@@ -10,7 +8,7 @@ import unittest
 
 from policy_v3.interface import decorate_observation, decode_candidate_choice, raw_observation
 from policy_v3.llm import choose_action, REPAIR_PROMPT
-from policy_mve.io import digest
+from policy_runtime.router import PolicyRouter
 
 
 class InterfaceTests(unittest.TestCase):
@@ -139,28 +137,12 @@ class InterfaceTests(unittest.TestCase):
         self.assertEqual(task["current_other_actor_actual_state"], "unknown")
 
     def test_actual_router_advice_then_choice_rebinds_ids(self):
-        # Execute the actual method ASTs without importing the optional cloud registry.
-        root = Path(__file__).resolve().parents[1]
-        namespace = {"copy": copy, "json": json, "digest": digest,
-                     "decorate_observation": decorate_observation, "append_jsonl": lambda *args: None}
-        for relative, name, methods in (("policy_mve/router.py", "PolicyRouterActor", {"ask", "enrich_advice"}),
-                                       ("policy_v3/router.py", "PolicyV3RouterActor", {"enrich_advice"})):
-            tree = ast.parse((root / relative).read_text(encoding="utf-8"))
-            cls = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == name)
-            cls.body = [node for node in cls.body if isinstance(node, ast.AsyncFunctionDef) and node.name in methods]
-            module = ast.fix_missing_locations(ast.Module(body=[cls], type_ignores=[]))
-            exec(compile(module, str(root / relative), "exec"), namespace)
         raw = self.raw()
         raw.update(actor_id=1, policy="legacy")
         raw["visible_tickets"] = [{"id": "T:1", "a_offered": True, "lead": None, "closed": False,
                                   "text": "visible text", "category": "water", "district": "d", "facility": "f"}]
         raw["available_actions"] = [{"kind": "route", "target": "T:1", "params": {"department": 2, "use_recommendation": True}, "reason": "visible"}]
         original = decorate_observation(raw)
-        router = namespace["PolicyV3RouterActor"]()
-        router.env = SimpleNamespace(observe=lambda actor: deepcopy(original))
-        router.run_dir = Path("mock")
-        router.decision_mode = "llm"
-        router.advice_cache = {}
         class Client:
             async def call(self, model, messages):
                 if "candidate_options" in messages[-1]["content"]:
@@ -170,8 +152,12 @@ class InterfaceTests(unittest.TestCase):
                 else:
                     content = '{"candidates":[3],"uncertain":true,"basis":"visible directory"}'
                 return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=content), finish_reason="stop")], usage={})
-        client = router.llm_client = Client()
-        payload, _ = asyncio.run(router.ask({"actor_id": 1}, "observe", readonly=True))
+        client = Client()
+        env = SimpleNamespace(observe=lambda actor: deepcopy(original), _bind_workspace=lambda path: None)
+        router = PolicyRouter(env, Path("mock"), "PolicyV3Env", "llm", client,
+                              finalize_observation=decorate_observation)
+        with patch("policy_runtime.router.append_jsonl"):
+            payload, _ = asyncio.run(router.ask({"actor_id": 1}, "observe", readonly=True))
         obs = payload["observation"]
         self.assertNotIn("policy", obs)
         self.assertEqual(obs["available_actions"][0]["params"]["department"], 3)

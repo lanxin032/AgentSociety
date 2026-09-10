@@ -1,0 +1,147 @@
+{
+  "provenance": {
+    "git_commit": "a2a82619d6cb8895b9692ada6bd7c0160d5c2cc2",
+    "source_sha256": {
+      "policy_v3/core.py": "a847ca5bb82892c8e4e3e4d8aba750c622fcbab14340f707ce9943511571c577",
+      "policy_v3/spec.py": "e59fd6daa28772ebc76bf7679f6708d6afa8162adba069279aae36d873726256",
+      "policy_v3/interface.py": "5e4b4ce7d9614927638ca9e1dde815bfcd3abfd12356ce9b1958157bf600fbe8",
+      "tests/test_v3_physical.py": "16a9b6a0d42e8e5bd78bf1a95cc3e0a5fbbda429c6b4a65d98036fd00b22c1a7",
+      "tests/test_v3_c_invariants.py": "b7d0cc5b646194141fb2933f44c92830d36b617cb8dd89aa8171344e0359174b"
+    },
+    "scope": "pre-refactor synthetic offline behavior, not research results"
+  },
+  "trajectories": {
+    "physical.test_built_no_commission": {
+      "sha256": "a9fae78c0201d46e72b964a6c4c167ce86ca40a917427fa23c7676b4e0b13a7d",
+      "calls": {
+        "observe": 36,
+        "submit": 16,
+        "advance": 15
+      }
+    },
+    "physical.test_commission_not_reported": {
+      "sha256": "d906ca0b920430b68591c9aa785413f3ffea6cdeae6f2dce141bae05353d744e",
+      "calls": {
+        "observe": 44,
+        "submit": 19,
+        "advance": 19
+      }
+    },
+    "physical.test_late_admin": {
+      "sha256": "d04489c95150afb7e7fcf2f5208d66f03256dcd4e25948f7ddbcf1524b447e4c",
+      "calls": {
+        "observe": 47,
+        "submit": 22,
+        "advance": 22
+      }
+    },
+    "physical.test_wrong_plan": {
+      "sha256": "1c7e4b124558fc21f4c8cbf05ce9b12b88a687a6cab1de539f15c294e99bb772",
+      "calls": {
+        "observe": 70,
+        "submit": 32,
+        "advance": 31
+      }
+    },
+    "physical.test_cancel_before": {
+      "sha256": "115ff73b50599088d0f7a0a4332bac3f82caf2128fd917f5bc5cd2bb5d03d807",
+      "calls": {
+        "observe": 45,
+        "submit": 20,
+        "advance": 20
+      }
+    },
+    "physical.test_cancel_after": {
+      "sha256": "18b34890a682232486287a851eab8ffe4a251b84a9dd5c8fa632043a5420c3ad",
+      "calls": {
+        "observe": 39,
+        "submit": 18,
+        "advance": 18
+      }
+    },
+    "physical.test_same_physics_both_modes": {
+      "sha256": "bfb2d7a8c851c6d15a4410d4939ef4d986ea84144f137d4dabe427551196bc37",
+      "calls": {
+        "observe": 43,
+        "submit": 20,
+        "advance": 20
+      }
+    },
+    "physical.test_stock_vs_recurrence": {
+      "sha256": "e3fc76388d296a9309453bdc1e733dee84a1f5e13a1c7938d59e44a1aacecb7b",
+      "calls": {
+        "observe": 48,
+        "submit": 22,
+        "advance": 22
+      }
+    },
+    "physical.test_invalid_combination": {
+      "sha256": "4428f3a040e874d27f401158fedf28218d61990818714133396c2264c66ca5ac",
+      "calls": {
+        "observe": 33,
+        "submit": 16,
+        "advance": 16
+      }
+    },
+    "physical.test_boundary": {
+      "sha256": "3ebe51525f7188607055d4c92fca98395456e7e4580438c4c42340294bc466a9",
+      "calls": {
+        "observe": 33,
+        "submit": 16,
+        "advance": 15
+      }
+    },
+    "physical.test_already_repaired_accept": {
+      "sha256": "b7ad1406942b9bb80d80ed530461102e3244d46b3ae6d06fa2befc07adf96e74",
+      "calls": {
+        "observe": 45,
+        "submit": 21,
+        "advance": 21
+      }
+    },
+    "physical.test_zero_and_activated_sharing_can_lawfully_inform_owner": {
+      "sha256": "09951891e4d19374d944854133ea76990311ac76879dc445e81bc0fc927bc408",
+      "calls": {
+        "observe": 58,
+        "submit": 24,
+        "advance": 23
+      }
+    },
+    "physical.test_hidden_matching_never_filters_project_observations": {
+      "sha256": "91560f806cf0f06bc69f1744a8fc2b57c9886e4b498ddf392fc3f7333255ecaf",
+      "calls": {
+        "observe": 47,
+        "submit": 18,
+        "advance": 18
+      }
+    },
+    "invariants.test_wrong_shared_plan_spends_resources_but_fails_in_both_channels": {
+      "sha256": "800e3c5b3ce82b124d38a394523d06edabe12addb99589bbbe197d99fa412ccd",
+      "calls": {
+        "observe": 284,
+        "submit": 35,
+        "advance": 35
+      }
+    },
+    "invariants.test_unsupported_topic_can_cancel_without_refund_or_success": {
+      "sha256": "4f311f5bcf8dd10de37bdb661ec6ea6aaa907c4e08a1f2f32b4b7994e52dd0eb",
+      "calls": {
+        "observe": 260,
+        "submit": 32,
+        "advance": 32
+      }
+    },
+    "invariants.test_matched_project_succeeds_while_every_stage_is_b_invariant": {
+      "sha256": "a3fdc0b85f36272705d57513ac785fb2b588307178908df1955360c13845849b",
+      "calls": {
+        "observe": 284,
+        "submit": 35,
+        "advance": 35
+      }
+    }
+  },
+  "resume_results": {
+    "conventional": "44a34b5f1a0ef077558c4c5404c4de05d9125da8bdd90a3cb2464c3c43491a75",
+    "structured": "d5fcc86525a4cc5bd895a65a21483180b42bb6fa988d42fc0b9acc80e98323cf"
+  }
+}

@@ -13,7 +13,7 @@ MODEL_SETTINGS = {
 def code_manifest(root):
     root = Path(root)
     files = []
-    for folder in ("policy_v3", "policy_mve", "custom", "tools"):
+    for folder in ("policy_v3", "policy_mve", "policy_runtime", "custom", "tools"):
         for path in sorted((root / folder).rglob("*.py")):
             if "__pycache__" not in path.parts:
                 files.append({"path": path.relative_to(root).as_posix(),
