@@ -1,5 +1,15 @@
 # Policy Mix Cloud Development
 
+## 当前 policy_sim 执行入口
+
+当前运行基础使用 AgentSociety2 2.8.7 的 PersonAgent、ReAct、Memory、官方邮箱及工作区，执行入口为 `policy_sim`。旧实现和旧测试在本分支保留供追溯；下方旧命令不作为新执行包的入口。
+
+离线检查新执行包：`python -B -m unittest discover -s tests -p 'test_sim_*.py' -v`。
+
+`python -m policy_sim prepare --output runs/<new-preflight>` 只生成冻结方案和未批准授权草案；`run`/`resume` 仍要求单独有效授权及原预算账本。提交源码不构成实验授权。
+
+当前包按有限工作负载运行，每个主体每轮有一次业务行动机会；通过官方 ReAct 工具观察、按需读取、提交候选，再 finish。环境模板指令由 `dispatch_plan` 确定性分发。监控入口为 `tools/monitor_000.py`。
+
 ## Local macOS environment
 
 The local Conda environment is `agentsociety` (Python 3.12). `environment.yml`

@@ -1,0 +1,64 @@
+{
+  "provenance": {
+    "source": "runs/mac-diagnostic-20260910-execution/v31_diagnostic_s1001_r0_diagnostic_A0_B0_C1/agents/agent_0001/decisions.jsonl",
+    "upstream_requests": [
+      108,
+      111
+    ],
+    "note": "Envelope reconstructed from saved client traces; unavailable upstream fields are omitted."
+  },
+  "responses": [
+    {
+      "choices": [
+        {
+          "message": {
+            "content": ""
+          },
+          "finish_reason": "length"
+        }
+      ],
+      "usage": {
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "completion_tokens": 4096,
+        "completion_tokens_details": {
+          "reasoning_tokens": 4096,
+          "text_tokens": 0
+        },
+        "prompt_tokens": 7053,
+        "prompt_tokens_details": {
+          "cache_creation_tokens": 0,
+          "cached_tokens": 0,
+          "text_tokens": 7053
+        },
+        "total_tokens": 11149
+      }
+    },
+    {
+      "choices": [
+        {
+          "message": {
+            "content": ""
+          },
+          "finish_reason": "length"
+        }
+      ],
+      "usage": {
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 6656,
+        "completion_tokens": 4096,
+        "completion_tokens_details": {
+          "reasoning_tokens": 4096,
+          "text_tokens": 0
+        },
+        "prompt_tokens": 7094,
+        "prompt_tokens_details": {
+          "cache_creation_tokens": 0,
+          "cached_tokens": 6656,
+          "text_tokens": 438
+        },
+        "total_tokens": 11190
+      }
+    }
+  ]
+}

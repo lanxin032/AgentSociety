@@ -5,6 +5,6 @@ dependencies:
   - python=3.12
   - pip
   - pip:
-      - agentsociety2==2.8.4
+      - agentsociety2==2.8.7
       - ray==2.55.1
       - mcp[cli]>=1.13.1,<2

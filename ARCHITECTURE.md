@@ -1,5 +1,9 @@
 # 代码阅读与修改入口
 
+当前新增执行包为 `policy_sim`，使用 AgentSociety2 2.8.7。主入口见 [README](README.md#当前-policy_sim-执行入口)；主体、路由和当前工作状态分别由 `policy_sim/agent.py`、`router.py`、`work.py` 维护，执行与证据恢复由 `controller.py`、`driver.py`、`checkpoints.py`、`execution.py` 维护。
+
+以下章节保留旧 MVE/V3 结构，供仍保留的历史源码追溯；不作为当前执行包的接口说明。
+
 领域用语见 [CONTEXT.md](CONTEXT.md)。MVE 是保留的基线，V3 是当前研究实现；两者复用执行机制，但各自保留世界状态、决策规则和审计口径。
 
 ## 共享执行
