@@ -132,6 +132,8 @@ class PolicyOfficer(PersonAgent):
 
     def build_react_messages(self, **kwargs):
         from .official_adapter import adapt_official_messages
+        self._visible_asks = [row['data']['ask_id'] for row in kwargs['observations'][-8:]
+                              if (row.get('data') or {}).get('ask_id')]
         return adapt_official_messages(super().build_react_messages(**kwargs))
 
     def _build_memory_runtime(self):
@@ -198,12 +200,15 @@ class PolicyOfficer(PersonAgent):
         self._client.raise_if_failed()
 
     def env_ask_env_ctx_overlay(self):
-        return {**super().env_ask_env_ctx_overlay(), "actor_id": self.id, "round": self._policy_round, "actor_call_index": self._completion_calls - 1, "lifecycle_complete": False}
+        return {**super().env_ask_env_ctx_overlay(), "actor_id": self.id, "round": self._policy_round,
+                "actor_call_index": self._completion_calls - 1, "actor_turn": self._official_turn,
+                "visible_asks": getattr(self, '_visible_asks', []), "lifecycle_complete": False}
 
     async def step(self, tick, t):
         self._policy_round = self._step_count
         self._policy_observation = self._submission = None
         self._explicit_finish = False
+        self._visible_asks = []
         self._completion_calls = self._schema_errors = self._official_turn = 0
         try:
             await super().step(tick, t)

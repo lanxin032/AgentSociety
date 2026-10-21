@@ -17,6 +17,7 @@ from .profiles import (MODEL, PURPOSES, make_profile, validate_profile,
 # Shared by driver and Ray workers on the owned local attempt filesystem.
 STOP_FILE = "request_stop.json"
 REQUEST_TIMEOUT = 660
+DRAIN_TIMEOUT = REQUEST_TIMEOUT + 15
 
 
 def stop_requests(run_dir, reason="attempt_failed"):

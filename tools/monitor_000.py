@@ -45,8 +45,12 @@ def repeated_reads(receipts, *, committed_round, completed=()):
                 answer = json.loads(row["observation"])
             except (ValueError, KeyError):
                 continue
-            candidates.extend((r["operation"], r["payload"], canonical(r["result"]))
-                for r in answer.get("receipts", []) if r.get("ok") and r["operation"] in {"observe", "read_materials", "read_work"})
+            for receipt in answer.get('receipts', []):
+                if receipt.get('ok') and receipt['operation'] in {'observe', 'read_materials', 'read_work'}:
+                    result = receipt['result']
+                    if isinstance(result, dict):
+                        result = {k: v for k, v in result.items() if k not in {'read_count_this_turn', 'pace_note'}}
+                    candidates.append((receipt['operation'], receipt['payload'], canonical(result)))
         for operation, payload, answer in candidates:
             from hashlib import sha256
             key = (row["round"], row["actor_id"], operation,

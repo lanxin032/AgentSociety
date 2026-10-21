@@ -17,6 +17,42 @@ from policy_sim.driver import TaskDrain
 from policy_sim.evidence import load_model_events
 
 
+class ControllerDrainTests(unittest.TestCase):
+    def test_proxy_failure_allows_driver_to_finish_draining(self):
+        import subprocess
+        from policy_sim.controller import launch
+        from policy_sim.io import write_json
+        from policy_sim.profiles import make_profile
+        now = [0.0]
+        child = SimpleNamespace(returncode=None)
+        def poll():
+            if now[0] >= 120:
+                child.returncode = 1
+            return child.returncode
+        def sleep(seconds):
+            now[0] += 10
+        child.poll = poll
+        from unittest.mock import Mock
+        child.send_signal = Mock()
+        child.kill = Mock(side_effect=lambda: setattr(child, 'returncode', -9))
+        child.wait = Mock(side_effect=lambda **kwargs: None if child.returncode is not None
+                          else (_ for _ in ()).throw(subprocess.TimeoutExpired('driver', 20)))
+        proxy = SimpleNamespace(fatal_event=SimpleNamespace(is_set=lambda: True),
+                                fatal_details={'error_type': 'transport_error'}, fatal_reason='fixture')
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            record = root / 'record.json'
+            write_json(record, {'runtime_profile': make_profile()})
+            args = SimpleNamespace(output=root, resume=False, test_scripted_failure_round=None,
+                                   timeout=0, stop_at=None)
+            with patch('policy_sim.controller.subprocess.Popen', return_value=child), \
+                 patch('policy_sim.controller.time.monotonic', side_effect=lambda: now[0]), \
+                 patch('policy_sim.controller.time.sleep', side_effect=sleep):
+                self.assertFalse(launch(args, record, 'http://127.0.0.1:1', {'invocation_id': 'fixture'}, proxy))
+        child.send_signal.assert_not_called()
+        child.kill.assert_not_called()
+
+
 class Response(SimpleNamespace):
     def model_dump(self, **kwargs):
         return {"id": "settled", "usage": {"prompt_tokens": 3, "completion_tokens": 1},

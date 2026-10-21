@@ -51,6 +51,106 @@ class InformationContractTests(unittest.TestCase):
 
 
 class OfficialInformationTests(unittest.IsolatedAsyncioTestCase):
+    async def test_pacing_counts_react_turns_instead_of_schema_repair_requests(self):
+        fixture = framework.FrameworkTests('test_official_lifecycle_four_finished_barrier_and_restore')
+        await fixture.asyncSetUp()
+        self.addCleanup(fixture.tmp.cleanup)
+        self.addCleanup(fixture.no_network.stop)
+        actor = fixture.actors[0]
+        original, calls = actor._client.call, []
+        async def reply(**kwargs):
+            if kwargs.get('tools'):
+                calls.append(1)
+                if len(calls) <= 12:
+                    if len(calls) % 2:
+                        return tool_response('unavailable_tool', {})
+                    return tool_response('ask_env', {'instruction': 'read_work section {section} offset {offset}',
+                        'variables': {'section': 'inbox', 'offset': 0}, 'readonly': True})
+            return await original(**kwargs)
+        actor._client.call = reply
+        await actor.step(1, fixture.now)
+        reads = [r for r in framework.rows(fixture.root / 'native_routes.jsonl') if r['operation'] == 'read_work']
+        self.assertEqual(len(reads), 6)
+        self.assertTrue(all('pace_note' not in r['result'] for r in reads[:5]))
+        self.assertIn('第6次ReAct迭代', reads[5]['result']['pace_note'])
+
+    async def test_evicted_page_is_served_again_after_a_batch_of_eight_tool_results(self):
+        for operation in ('read_work', 'read_materials'):
+            with self.subTest(operation=operation):
+                await self._check_evicted_page(operation)
+
+    async def _check_evicted_page(self, operation):
+        fixture = framework.FrameworkTests('test_official_lifecycle_four_finished_barrier_and_restore')
+        await fixture.asyncSetUp()
+        self.addCleanup(fixture.tmp.cleanup)
+        self.addCleanup(fixture.no_network.stop)
+        actor = fixture.actors[0]
+        original, turns = actor._client.call, []
+        def read(section):
+            if operation == 'read_materials' and section == 'public_rules':
+                sid = actor._policy_observation['materials']['source_index'][0]['source_id']
+                return tool_response('ask_env', {'instruction': 'read_materials source_ids {source_ids} reason {reason}',
+                    'variables': {'source_ids': [sid], 'reason': '读取已获授权的正文'}, 'readonly': True})
+            return tool_response('ask_env', {'instruction': 'read_work section {section} offset {offset}',
+                'variables': {'section': section, 'offset': 0}, 'readonly': True})
+        async def reply(**kwargs):
+            if not kwargs.get('tools'):
+                return await original(**kwargs)
+            turns.append(1)
+            if len(turns) in (1, 3):
+                return read('public_rules')
+            if len(turns) == 2:
+                batch = read('inbox')
+                for section in ('projects', 'topics', 'sent_messages', 'visible_tickets',
+                                'candidate_options', 'source_catalog', 'analyses'):
+                    call = read(section).choices[0].message.tool_calls[0]
+                    call.id = section
+                    batch.choices[0].message.tool_calls.append(call)
+                return batch
+            return await original(**kwargs)
+        actor._client.call = reply
+        await actor.step(1, fixture.now)
+        routes = [r for r in framework.rows(fixture.root / 'native_routes.jsonl')
+                  if r['operation'] == operation and
+                  (operation != 'read_work' or r['payload']['section'] == 'public_rules')]
+        self.assertEqual(len(routes), 2)
+        field = 'sources' if operation == 'read_materials' else 'value'
+        self.assertIn(field, routes[1]['result'])
+        self.assertEqual(routes[0]['result'][field], routes[1]['result'][field])
+        for other in fixture.actors[1:]:
+            await other.step(1, fixture.now)
+        await fixture.router.step(1, fixture.now)
+        from policy_sim.audit import audit_turns
+        decisions = [r for p in (fixture.root / 'agents').rglob('native_decisions.jsonl') for r in framework.rows(p)]
+        receipts = [r for p in (fixture.root / 'agents').rglob('native_tool_receipts.jsonl') for r in framework.rows(p)]
+        summaries, _ = audit_turns(decisions, framework.rows(fixture.root / 'observations.jsonl'),
+            framework.rows(fixture.root / 'actions.jsonl'), framework.rows(fixture.root / 'material_reads.jsonl'),
+            fixture.router.world.export_state(), tool_receipts=receipts,
+            environment_routes=framework.rows(fixture.root / 'native_routes.jsonl'))
+        self.assertEqual(len(summaries), 4)
+
+    async def test_first_official_prompt_already_contains_executable_candidates(self):
+        fixture = framework.FrameworkTests('test_official_lifecycle_four_finished_barrier_and_restore')
+        await fixture.asyncSetUp()
+        self.addCleanup(fixture.tmp.cleanup)
+        self.addCleanup(fixture.no_network.stop)
+        actor = fixture.actors[0]
+        original = actor._client.call
+        async def reply(**kwargs):
+            if kwargs.get('tools') and actor._submission is None:
+                blocks = _prompt_blocks(kwargs['messages'])
+                overview = json.loads(blocks['recent_observations'][0]['observation'])
+                self.assertIsInstance(overview.get('candidate_options'), list)
+                option = next(x for x in overview['candidate_options'] if x['kind'] == 'wait')
+                return tool_response('ask_env', {'instruction': 'submit candidate {candidate_id} with reason {reason}',
+                    'variables': {'candidate_id': option['candidate_id'], 'reason': '按初始观察等待'}, 'readonly': False})
+            return await original(**kwargs)
+        actor._client.call = reply
+        result = json.loads(await actor.step(1, fixture.now))
+        self.assertTrue(result['submitted'])
+        self.assertEqual(actor._completion_calls, 2)
+        self.assertEqual([r['operation'] for r in framework.rows(fixture.root / 'native_routes.jsonl')], ['submit'])
+
     async def test_repeated_read_serves_stub_and_audit_replays_it(self):
         # attempt-0067 regression class: an identical in-round re-read must
         # return the unchanged stub through the official loop, and the

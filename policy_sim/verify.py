@@ -461,11 +461,12 @@ def replay_actions(state, observations=None, material_reads=None):
             errors.append('Observation trace must cover all four actors in every committed round')
     submissions = [e for e in state['events'] if e.get('kind') == 'action_submitted']
     actual_keys = [(e.get('round'), e.get('actor_id')) for e in submissions]
-    phases = defaultdict(list)
-    for (r, actor) in actual_keys:
-        phases[r].append(actor)
-    if list(phases) != list(range(state['round'])) or any((len(actors) != 4 or set(actors) != set(ACTORS) for actors in phases.values())):
-        errors.append('Action submissions do not follow one complete four-actor phase per round')
+    unfiled = [(e['round'], e['actor_id']) for e in state['events']
+               if e.get('kind') == 'action_result' and e.get('status') == 'unfiled']
+    expected_keys = {(r, actor) for r in range(state['round']) for actor in ACTORS}
+    if (len(set(actual_keys + unfiled)) != len(actual_keys + unfiled)
+            or set(actual_keys + unfiled) != expected_keys):
+        errors.append('Every actor phase must have one submission or unfiled result')
         return (None, errors)
     try:
         def deliver_due():
@@ -475,26 +476,27 @@ def replay_actions(state, observations=None, material_reads=None):
                 if message['delivered_round'] is None and message['deliver_round'] <= world.round:
                     world.accept_delivery(mid)
         deliver_due()
-        submitted = set()
-        for event in submissions:
-            (actor, r) = (event['actor_id'], event['round'])
-            expected_observation = world.observe(actor)
-            if observations is not None and (r, actor) in records:
-                from .audit_visibility import audit_visibility
-                audit_visibility(records[r, actor], world.export_state())
-                errors.extend((f'round={r} actor={actor}: {msg}' for msg in audit_observation(expected_observation, records[r, actor], world.material_service_inputs(actor))))
-                from .audit_materials import replay_reads
-                from .llm import validate_action
-                reads = [row for row in material_reads or [] if (row.get('round'), row.get('actor_id')) == (r, actor)]
-                delivered = replay_reads(world, records[r, actor], reads)
-                validate_action(event['action'], delivered)
-                world.bind_material_context(actor, delivered)
-            world.submit(actor, deepcopy(event['action']))
-            submitted.add(actor)
-            if submitted == set(ACTORS):
-                world.advance()
-                deliver_due()
-                submitted.clear()
+        for r in range(state['round']):
+            delivered_by_actor = {}
+            for actor in ACTORS:
+                expected_observation = world.observe(actor)
+                if observations is not None and (r, actor) in records:
+                    from .audit_visibility import audit_visibility
+                    audit_visibility(records[r, actor], world.export_state())
+                    errors.extend((f'round={r} actor={actor}: {msg}' for msg in audit_observation(expected_observation, records[r, actor], world.material_service_inputs(actor))))
+                    from .audit_materials import replay_reads
+                    reads = [row for row in material_reads or [] if (row.get('round'), row.get('actor_id')) == (r, actor)]
+                    delivered = replay_reads(world, records[r, actor], reads)
+                    delivered_by_actor[actor] = delivered
+                    world.bind_material_context(actor, delivered)
+            for event in (e for e in submissions if e['round'] == r):
+                actor = event['actor_id']
+                if actor in delivered_by_actor:
+                    from .llm import validate_action
+                    validate_action(event['action'], delivered_by_actor[actor])
+                world.submit(actor, deepcopy(event['action']))
+            world.advance()
+            deliver_due()
         replayed = world.export_state()
         replay_hash = _hash(replayed)
         if replay_hash != _hash(state):

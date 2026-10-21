@@ -15,6 +15,43 @@ from policy_sim.router import RUNTIME_VERSION
 
 
 class ExecutionIntegrityTests(unittest.TestCase):
+    def test_restored_payloads_are_readable_and_new_requests_preserve_failed_evidence(self):
+        from uuid import uuid4
+        from policy_sim.evidence import append_model_event, load_model_events
+        from policy_sim.recovery import tree_hashes
+        from policy_sim.checkpoints import copy_checkpoint
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            original = root / 'attempt'
+            original.mkdir()
+            row = {'event': 'request_started', 'request_id': str(uuid4()),
+                   'messages': [{'role': 'user', 'content': 'known input'}]}
+            append_model_event(original / 'model_requests.jsonl', row)
+            write_json(original / 'recovery_lineage.json', [{'parent_attempt_id': 'earlier'}])
+            snapshot = root / 'attempt-commits/round-000001'
+            copy_checkpoint(original, snapshot)
+            before = tree_hashes(original)
+            resumed = root / 'resumed'
+            copy_checkpoint(snapshot, resumed)
+            restore_payload_links(snapshot, resumed)
+            self.assertEqual(load_model_events(resumed)[0]['messages'], row['messages'])
+            self.assertEqual(read_json(resumed / 'recovery_lineage.json'), [{'parent_attempt_id': 'earlier'}])
+            append_model_event(resumed / 'model_requests.jsonl', {**row, 'request_id': str(uuid4())})
+            self.assertEqual(tree_hashes(original), before)
+            self.assertEqual(len(load_model_events(resumed)), 2)
+            self.assertTrue(tree_hashes(resumed))
+            second_snapshot = root / 'resumed-commits/round-000002'
+            copy_checkpoint(resumed, second_snapshot)
+            second = root / 'second'
+            copy_checkpoint(second_snapshot, second)
+            restore_payload_links(second_snapshot, second)
+            before_resume = tree_hashes(resumed)
+            append_model_event(second / 'model_requests.jsonl', {**row, 'request_id': str(uuid4())})
+            self.assertEqual(len(load_model_events(second)), 3)
+            self.assertEqual(tree_hashes(original), before)
+            self.assertEqual(tree_hashes(resumed), before_resume)
+            self.assertEqual(read_json(second / 'recovery_lineage.json'), [{'parent_attempt_id': 'earlier'}])
+
     def test_current_manifest_freezes_finite_science(self):
         root = Path(__file__).resolve().parents[1]
         manifest = make_manifest(root)

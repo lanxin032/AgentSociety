@@ -144,14 +144,14 @@ def material_stub(source_ids, count):
             "read_count_this_turn": count, "note": MATERIAL_STUB_NOTE}
 
 
-def pace_note(call_index):
+def pace_note(turn_index):
     """In-band pacing fact once the actor's own loop is more than half spent.
 
     States only the actor's own iteration facts; whether to submit, wait or
     keep reading remains the actor's decision.
     """
-    if type(call_index) is int and call_index >= PACE_FROM_CALL:
-        return (f"这是本主体本轮第{call_index + 1}次工具调用（官方循环上限10次）；"
+    if type(turn_index) is int and turn_index >= PACE_FROM_CALL:
+        return (f"这是本主体本轮第{turn_index + 1}次ReAct迭代（官方循环上限10次）；"
                 "排队回执之后还需要单独一次finish，信息足够时请尽快提交候选。")
     return None
 
@@ -216,9 +216,7 @@ class WorkContext:
     def __init__(self, observation):
         self.observation = deepcopy(observation)
         self.default_raw = deepcopy(observation["materials"]["raw"])
-        # Turn-scoped read ledger: an identical re-read within the same round
-        # has no new information, so its content is not re-served (cache-HIT
-        # semantics). The ledger never crosses a round boundary.
+        # Suppress only bodies still present in the official observation window.
         self.read_pages = {}
         self.read_counts = {}
         self.read_sources = {}
@@ -227,22 +225,25 @@ class WorkContext:
     def current_work(self):
         return business_observation(self.observation)
 
-    def read_work_once(self, section, offset):
+    def read_work_once(self, section, offset, *, ask_id=None, visible_asks=()):
         page = read_work_section(self.observation, section, offset)
         key = ("work", section, offset)
-        if self.read_pages.get(key) == page:
+        prior = self.read_pages.get(key)
+        if prior is not None and prior[0] == page and prior[1] in visible_asks:
             self.read_counts[key] = self.read_counts.get(key, 1) + 1
             return read_stub(section, offset, self.read_counts[key])
-        self.read_pages[key] = page
+        self.read_pages[key] = (page, ask_id)
         self.read_counts[key] = 1
         return page
 
-    def seen_materials(self, ids):
+    def seen_materials(self, ids, visible_asks=()):
         key = tuple(sorted(ids))
-        return key in self.read_sources
+        return key in self.read_sources and self.read_sources[key] in visible_asks
 
-    def mark_materials(self, ids):
-        self.read_sources[tuple(sorted(ids))] = True
+    def mark_materials(self, ids, ask_id=None):
+        key = tuple(sorted(ids))
+        self.read_sources[key] = ask_id
+        self.read_counts[('materials', key)] = 1
 
     def material_repeat_count(self, ids):
         key = tuple(sorted(ids))

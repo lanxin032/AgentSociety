@@ -7,6 +7,7 @@ enough to detect divergence. Full per-file verification happens once, in the
 offline independent audit, not on every round.
 """
 import hashlib
+import os
 import shutil
 from pathlib import Path
 from .io import digest, read_json, write_json
@@ -79,7 +80,7 @@ def validate_commit(snapshot):
 
 def copy_checkpoint(run_dir, destination):
     shutil.copytree(run_dir, destination, dirs_exist_ok=True,
-                    ignore=shutil.ignore_patterns('model_payloads', 'recovery_lineage.json'))
+                    ignore=shutil.ignore_patterns('model_payloads'))
 
 
 def restore_payload_links(snapshot, destination):
@@ -92,7 +93,5 @@ def restore_payload_links(snapshot, destination):
     if payloads.is_dir():
         target = destination / 'model_payloads'
         if not target.exists():
-            target.symlink_to(payloads.resolve(), target_is_directory=True)
-    lineage = run_dir / 'recovery_lineage.json'
-    if lineage.is_file():
-        shutil.copy2(lineage, destination / 'recovery_lineage.json')
+            # Each attempt owns its directory; existing UUID files stay immutable.
+            shutil.copytree(payloads, target, copy_function=os.link)

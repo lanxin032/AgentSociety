@@ -10,6 +10,10 @@
 
 当前包按有限工作负载运行，每个主体每轮有一次业务行动机会；通过官方 ReAct 工具观察、按需读取、提交候选，再 finish。环境模板指令由 `dispatch_plan` 确定性分发。监控入口为 `tools/monitor_000.py`。
 
+七项离线修复覆盖：未办理及兜底记忆审计回放、在途请求排空期限、恢复证据所有权、初始观察正文、最近八条工具观察对应的读取缓存、重复读取监控，以及按实际 ReAct 迭代计数的节奏提示。当前运行时为 `official-policy-5`、接口 `v3.3-materials-11`、提示 `official-native-16`；旧版冻结配置不能直接续跑。
+
+验证使用离线夹具，不启动真实模型 API 或 Ray；真实 token 降幅尚未测量。
+
 ## Local macOS environment
 
 The local Conda environment is `agentsociety` (Python 3.12). `environment.yml`

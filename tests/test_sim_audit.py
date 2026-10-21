@@ -14,6 +14,15 @@ from policy_sim.evidence import append_model_event
 
 
 class PhysicalAuditTests(unittest.TestCase):
+    def test_all_unfiled_round_replays_without_fabricated_submissions(self):
+        world = PolicyWorld('000')
+        observations = [{'round': 0, 'actor_id': actor, 'observation': world.observe(actor)}
+                        for actor in (1, 2, 3, 4)]
+        world.advance()
+        result = verify_state(world.export_state(), world.metrics(), observations)
+        self.assertTrue(result['passed'], result['errors'])
+        self.assertFalse(any(e['kind'] == 'action_submitted' for e in world.events))
+
     def test_unfinished_physics_does_not_certify_workload(self):
         world = PolicyWorld('000')
         result = verify_state(world.export_state(), world.metrics())
@@ -203,6 +212,53 @@ class OfficialTurnAuditTests(unittest.TestCase):
 
 
 class InstalledLoopEvidenceTests(unittest.IsolatedAsyncioTestCase):
+    async def test_native_audit_accepts_finished_unfiled_and_fallback_filed_turns(self):
+        from tests.test_sim_framework import FrameworkTests
+        from policy_sim.agent import tool_response
+        from policy_sim.audit import audit_native
+        from policy_sim.checkpoints import commit_round
+        from policy_sim.io import read_json, write_json
+        from policy_sim.profiles import settings_for_purpose
+        for outcome in ('finished', 'unfiled', 'filed_fallback'):
+            with self.subTest(outcome=outcome):
+                harness = FrameworkTests('test_official_lifecycle_four_finished_barrier_and_restore')
+                await harness.asyncSetUp()
+                try:
+                    frozen = read_json(harness.root / 'run_config.json')
+                    frozen.update(mode='scripted', horizon=None,
+                                  request_settings=settings_for_purpose(frozen['runtime_profile']))
+                    write_json(harness.root / 'run_config.json', frozen)
+                    write_json(harness.root / 'SOCIETY_STEP.json', {'step_count': 0})
+                    await harness.router.to_workspaces()
+                    commit_round(harness.root, 0, harness.router.world.export_state(), [])
+                    actor = harness.actors[0]
+                    original = actor._client.call
+                    async def reply(**kwargs):
+                        if kwargs.get('tools') and outcome != 'finished':
+                            if outcome == 'unfiled':
+                                return tool_response('finish', {'memories': [
+                                    {'type': 'observation', 'importance': .2, 'text': '未办理'}]})
+                            if actor._submission is not None:
+                                return tool_response('finish', {'memories': []})
+                        return await original(**kwargs)
+                    actor._client.call = reply
+                    for officer in harness.actors:
+                        await officer.step(1, harness.now)
+                        await officer.to_workspace(officer.workspace_root_path())
+                    await harness.router.step(1, harness.now)
+                    await harness.router.to_workspaces()
+                    result = audit_native(harness.root)
+                    self.assertTrue(result['passed'], result['errors'])
+                    self.assertEqual(result['checks']['actor_rounds'], 4)
+                    path = actor.workspace_root_path() / 'memory/episodes.jsonl'
+                    episodes = [json.loads(line) for line in path.read_text().splitlines()]
+                    episodes[0]['text'] = 'forged memory'
+                    path.write_text(''.join(json.dumps(row) + '\n' for row in episodes))
+                    self.assertFalse(audit_native(harness.root)['passed'])
+                finally:
+                    harness.no_network.stop()
+                    harness.tmp.cleanup()
+
     async def test_mailbox_audit_rejects_deleted_and_forged_delivery_receipts(self):
         from datetime import datetime, timedelta
         from tests.test_sim_framework import FrameworkTests  # installed offline configuration

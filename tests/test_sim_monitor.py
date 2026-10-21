@@ -5,6 +5,23 @@ from tools.monitor_000 import repeated_reads
 
 
 class MonitorTests(unittest.TestCase):
+    def test_real_read_stubs_and_pacing_do_not_hide_repetition(self):
+        from policy_sim.work import WorkContext, paced
+        context = WorkContext({'round': 0, 'actor_id': 1, 'materials': {'raw': []},
+                               'public_rules': {'known_rule': 'fixture'}})
+        receipts = []
+        for call in range(10):
+            result = paced(call, context.read_work_once('public_rules', 0,
+                ask_id=str(call), visible_asks=['0']))
+            receipts.append({'round': 0, 'actor_id': 1, 'call_index': call, 'ok': True,
+                'action': 'ask_env', 'args': {}, 'observation': json.dumps({'receipts': [
+                    {'operation': 'read_work', 'payload': {'section': 'public_rules', 'offset': 0},
+                     'ok': True, 'result': result}]})})
+        warnings = repeated_reads(receipts, committed_round=0)['active_advisories']
+        self.assertEqual(len(warnings), 1)
+        self.assertEqual(warnings[0]['identical_returns'], 9)
+        self.assertFalse(warnings[0]['stop_warranted'])
+
     def test_read_work_repetitions_track_page_and_actual_return(self):
         receipts = [{"round": 0, "actor_id": 1, "call_index": call, "ok": True,
             "action": "ask_env", "args": {}, "observation": json.dumps({"receipts": [

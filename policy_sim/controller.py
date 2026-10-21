@@ -19,6 +19,7 @@ from policy_sim.execution import (AttemptRegistry, ExecutionError, check_deadlin
                                  validate_authorization, authorization_paths, file_hash, load_manifest)
 from policy_sim.checkpoints import validate_commit
 from policy_sim.proxy import BudgetProxy, LOCAL_KEY, ControllerLock, UPSTREAM
+from policy_sim.client import DRAIN_TIMEOUT
 
 
 def validate_attempt(args, record, authorization):
@@ -69,7 +70,7 @@ def launch(args, record_path, base_url, report, proxy=None):
                 if proxy_failed_at is None:
                     proxy_failed_at = time.monotonic()
                 # Let the official driver persist its failure and shut Ray down.
-                if time.monotonic() - proxy_failed_at > 30:
+                if time.monotonic() - proxy_failed_at > DRAIN_TIMEOUT + 30:
                     reason = "Budget proxy stopped: " + str(proxy.fatal_reason)
             if args.timeout and time.monotonic() - start > args.timeout:
                 reason = "Chunk wall-clock cap reached"

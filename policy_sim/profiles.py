@@ -26,7 +26,7 @@ def make_profile(thinking="disabled", *, provider=None):
         "recent_memory_limit": 8, "memory_consolidation_pending_threshold": 10,
         "memory_consolidation_interval_steps": 8,
         "memory_high_importance_threshold": 0.75,
-        "workload_mode": "finite", "prompt_version": "official-native-15",
+        "workload_mode": "finite", "prompt_version": "official-native-16",
         "token_metric": "T_system", "max_material_reads_per_round": None,
     }
 

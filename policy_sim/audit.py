@@ -106,11 +106,32 @@ def audit_finish_memories(run_dir, decisions, actions):
                     'keywords': list(dict.fromkeys(s.strip() for s in raw.get('keywords', []) if s.strip())),
                     'refs': list(dict.fromkeys(s.strip() for s in raw.get('refs', []) if s.strip()))})
             expected[key] = memories
-    _require(set(expected) == set(submitted), 'Missing finish memory evidence')
-    # Actors whose turn ended unfiled never call finish; their episodes come
-    # from the official fallback synthesis and are checked for exactly that.
-    all_keys = {_key(row) for row in decisions}
-    unfiled_keys = all_keys - set(submitted)
+    _require(set(expected) <= set(submitted), 'Finish lacks a business submission')
+    groups = defaultdict(list)
+    for row in decisions:
+        groups[_key(row)].append(row)
+    receipts = [row for path in Path(run_dir).glob('agents/*/native_tool_receipts.jsonl') for row in _rows(path)]
+    for key in set(groups) - set(expected):
+        rows = groups[key]
+        identity = _prompt_blocks(rows[0]['messages'])['agent']
+        history = list(_prompt_blocks(rows[0]['messages'])['recent_observations'])
+        for index, row in enumerate(rows):
+            if index + 1 < len(rows) and rows[index + 1]['official_turn'] == row['official_turn']:
+                continue
+            if row.get('response_error'):
+                history.append({'action': '(invalid)', 'observation': row['response_error']})
+            else:
+                history.extend(r for r in receipts if _key(r) == key and r['call_index'] == row['call_index'])
+        parts = []
+        for observation in history:
+            action = str(observation.get('action') or '').strip()
+            text = str(observation.get('observation') or '').strip()
+            if text:
+                parts.append((f'{action}: ' if action and action != '(invalid)' else '') + text[:200])
+        summary = ' | '.join(parts[:5]) if parts else 'no notable events recorded'
+        text = f"Step {key[0] + 1} ({identity['current_time']}): {summary}"[:1000]
+        expected[key] = [{'type': 'observation', 'importance': .4, 'source': 'step_result_fallback',
+                          'text': ' '.join(text.strip().split()), 'keywords': [], 'refs': []}]
     actual = defaultdict(list)
     ids = set()
     for path in Path(run_dir).glob('agents/*/memory/episodes.jsonl'):
@@ -122,13 +143,7 @@ def audit_finish_memories(run_dir, decisions, actions):
             ids.add(ident)
             actual[episode['step_count'] - 1, actor].append({k: episode[k] for k in
                 ('type', 'importance', 'source', 'text', 'keywords', 'refs')})
-    for key in unfiled_keys:
-        _require(all(e['source'] == 'step_result_fallback' for e in actual.get(key, [])),
-                 'Unfiled turn memories must come from the official fallback synthesis')
-    _require(dict(actual) == {k: v for k, v in expected.items() if v} or
-             (dict(actual) == {**{k: v for k, v in expected.items() if v},
-                               **{k: v for k, v in actual.items() if k in unfiled_keys}}
-              and all(all(e['source'] == 'step_result_fallback' for e in v) for k, v in actual.items() if k in unfiled_keys)),
+    _require(dict(actual) == {k: v for k, v in expected.items() if v},
              'Saved official memories differ from raw finish memories')
     return sum(map(len, expected.values()))
 
@@ -267,13 +282,18 @@ def audit_native(run_dir, ledger_receipts=None):
                 _require(turn.get('step_completed') is True and (turn.get('submitted') is True or turn.get('unfiled') is True),
                          'Official step lacks completed filing or recorded unfiled outcome')
         settlements = _unique(_rows(root / 'native_settlements.jsonl'))
-        _require(set(settlements) == expected, 'Settlements must cover every committed actor phase')
-        _require(set(summaries) == {k for k in expected if k not in unfiled}, 'Summaries must cover filed phases')
+        expected_phases = {(r, a) for r in range(state['round']) for a in (1, 2, 3, 4)}
+        _require(set(settlements) == set(summaries) == expected_phases, 'Settlements must cover every committed actor phase')
         world_results = _unique([e for e in state['events'] if e.get('kind') == 'action_result'])
         for (key, summary) in summaries.items():
+            event = world_results[key]
+            if event['status'] == 'unfiled':
+                _require(settlements[key] == {'round': key[0], 'actor_id': key[1], 'submission_id': None,
+                    'status': 'unfiled', 'code': 'actor_turn_failed', 'action_kind': None, 'target': None},
+                    'Unfiled settlement differs from authoritative world events')
+                continue
             sid = digest([frozen['record']['run_id'], *key])
             _require(summary['receipt'].get('submission_id') == sid and settlements[key].get('submission_id') == sid, 'Unstable submission/settlement identity')
-            event = world_results[key]
             expected = {'round': key[0], 'actor_id': key[1], 'submission_id': sid, 'status': event['status'], 'code': event['code'], 'action_kind': event['action']['kind'], 'target': event['action']['target'], 'resources_paid': {n: round(sum((e[n] for e in state['events'] if e.get('kind') == 'resource_spent' and _key(e) == key)), 8) for n in ('labor', 'capital', 'crew')}}
             expected.pop('resources_paid')
             _require(settlements[key] == expected, 'Settlement differs from authoritative world events')
@@ -472,18 +492,18 @@ def audit_turns(decisions, observations, actions, reads, state, profile=None, to
     expected = {(r, a) for r in range(state['round']) for a in (1, 2, 3, 4)}
     obs, logged = _unique(observations), _unique(actions)
     submitted = _unique([e for e in state['events'] if e.get('kind') == 'action_submitted'])
-    unfiled = _unique([_key({'round': e['round'], 'actor_id': e['actor_id']}) for e in state['events']
+    unfiled = _unique([e for e in state['events']
                        if e.get('kind') == 'action_result' and e.get('status') == 'unfiled'])
     groups, read_groups = defaultdict(list), defaultdict(list)
     for row in decisions:
         groups[_key(row)].append(row)
     for row in reads:
         read_groups[_key(row)].append(row)
-    _require(set(obs) == set(logged) == set(submitted) == {k for k in expected if k not in unfiled},
+    _require(set(obs) == expected and set(logged) == set(submitted) == expected - set(unfiled),
              'Official turns must cover every committed filed actor phase')
     _require(set(submitted) | set(unfiled) == expected and not (set(submitted) & set(unfiled)),
              'Every committed actor phase is either filed or recorded unfiled')
-    _require(set(groups) <= expected, 'Decision evidence outside committed phases')
+    _require(set(groups) == expected, 'Decision evidence must cover every committed phase')
     _require(set(read_groups) <= expected, 'Material query outside committed turn')
     receipts_all = list(tool_receipts or [])
     _require(all(_key(r) in expected and type(r.get('call_index')) is int and 0 <= r['call_index'] < len(groups[_key(r)]) for r in receipts_all), 'Tool execution outside committed call')
@@ -495,7 +515,7 @@ def audit_turns(decisions, observations, actions, reads, state, profile=None, to
     official_tools = react_tool_schemas(enable_todo_list=False, enable_memory=True, disable_skills=True,
         overrides={'finish': finish_step_tool_schema()})
     summaries, selected_routes = {}, []
-    for key in sorted(k for k in expected if k not in unfiled):
+    for key in sorted(expected):
         current, selected, used, finished = deepcopy(obs[key]['observation']), None, 0, False
         read_ledger, read_counts = {}, {}
         session = WorkContext(current)
@@ -508,6 +528,8 @@ def audit_turns(decisions, observations, actions, reads, state, profile=None, to
             _require(row.get('call_index') == index and row.get('readonly') is False and not finished, 'Call ordering/readonly/finish differs')
             _require(row.get('context_sha256') == current['context_sha256'], 'Call context differs from lawful observation')
             blocks = _prompt_blocks(row['messages'])
+            visible_asks = [r['data']['ask_id'] for r in blocks['recent_observations']
+                            if (r.get('data') or {}).get('ask_id')]
             identity = blocks['agent']
             from .work import business_receipt
             pinned_work = {'phase': 'finish' if selected is not None else 'choose',
@@ -545,7 +567,7 @@ def audit_turns(decisions, observations, actions, reads, state, profile=None, to
             _require(turn == previous_turn + 1 or same_turn and (index < 2 or rows[index-2].get('official_turn') != turn), 'Official loop/retry bounds differ')
             if history is None:
                 history = blocks['recent_observations']
-                _require(len(history) == 1 and history[0].get('turn') == 0 and history[0].get('action') == 'observe' and history[0].get('ok') is True and _strict(history[0]['observation']) == {'status': 'observed', 'current_work_location': 'agent.current_work'}, 'Initial observation differs from lawful work')
+                _require(len(history) == 1 and history[0].get('turn') == 0 and history[0].get('action') == 'observe' and history[0].get('ok') is True and _strict(history[0]['observation']) == session.current_work, 'Initial observation differs from lawful work')
             if index and not same_turn and rows[index-1].get('response_error'):
                 error = rows[index-1]['response_error']
                 history.append({'turn': previous_turn, 'action': '(invalid)', 'ok': False, 'observation': error, 'data': {'error': error}})
@@ -573,7 +595,9 @@ def audit_turns(decisions, observations, actions, reads, state, profile=None, to
                         _finish(args)
                         _require(selected is not None and len(calls) == 1, 'Premature or mixed finish')
             except (ValueError, TypeError, KeyError, IndexError, AttributeError, ValidationError):
-                _require(row.get('response_error') and not receipts and index < len(rows)-1, 'Malformed call lacks rejection/retry')
+                _require(row.get('response_error') and not receipts and
+                         (index < len(rows)-1 or same_turn and turn == (profile or {}).get('max_react_turns', 10)),
+                         'Malformed call lacks rejection/retry')
                 continue
             _require(not row.get('response_error'), 'Valid response was falsely marked rejected')
             if calls[0][0] == 'finish':
@@ -604,6 +628,8 @@ def audit_turns(decisions, observations, actions, reads, state, profile=None, to
                         _require(False, 'Dispatchable instruction executed no environment tool')
                 _require(_strict(receipt['observation']) == expected_answer and receipt['data'] == {'instruction': args['instruction'], 'template_mode': True, 'ask_id': ask_id}, 'Actor environment receipt differs from executed router results')
                 for route in routed:
+                    _require(route.get('visible_asks') == visible_asks and route.get('actor_turn') == turn,
+                             'Router context differs from official observation window/turn')
                     op, payload = route['operation'], dict(route['payload'])
                     payload.pop('context_sha256', None)
                     if not route['ok']:
@@ -616,14 +642,15 @@ def audit_turns(decisions, observations, actions, reads, state, profile=None, to
                         _require(set(payload) <= {'section', 'offset'} and 'section' in payload, 'Malformed work section query')
                         page = read_work_section(current, payload['section'], payload.get('offset', 0))
                         ledger_key = ('work', payload['section'], payload.get('offset', 0))
-                        if read_ledger.get(ledger_key) == page:
+                        prior = read_ledger.get(ledger_key)
+                        if prior is not None and prior[0] == page and prior[1] in visible_asks:
                             read_counts[ledger_key] = read_counts.get(ledger_key, 1) + 1
                             expected_result = read_stub(payload['section'], payload.get('offset', 0), read_counts[ledger_key])
                         else:
-                            read_ledger[ledger_key] = page
+                            read_ledger[ledger_key] = (page, ask_id)
                             read_counts[ledger_key] = 1
                             expected_result = page
-                        expected_result = paced(route.get('actor_call_index'), expected_result)
+                        expected_result = paced(turn - 1, expected_result)
                     elif op == 'submit':
                         selected = validate_action(decode_candidate_choice(payload, current), current)
                         expected_result = {'action': selected, 'receipt': logged[key]['receipt']}
@@ -631,13 +658,15 @@ def audit_turns(decisions, observations, actions, reads, state, profile=None, to
                         _require(op == 'read_materials' and set(payload) == {'read_materials', 'reason'}, 'Malformed material query')
                         ids = decode_material_read(payload, current)
                         material_key = tuple(sorted(ids))
-                        if material_key in read_ledger.get('materials', set()):
+                        prior = read_ledger.get('materials', {}).get(material_key)
+                        if prior is not None and prior in visible_asks:
                             from .work import material_stub
                             counts_key = ('materials', material_key)
                             read_counts[counts_key] = read_counts.get(counts_key, 1) + 1
                             expected_result = material_stub(ids, read_counts[counts_key])
                         else:
-                            read_ledger.setdefault('materials', set()).add(material_key)
+                            read_ledger.setdefault('materials', {})[material_key] = ask_id
+                            read_counts['materials', material_key] = 1
                             _require(used < len(read_groups[key]), 'Material query lacks result')
                             read = read_groups[key][used]
                             _require(read['read_index'] == used and read['source_ids'] == ids and read['before_context_sha256'] == current['context_sha256'], 'Material query differs from intent')
@@ -646,10 +675,19 @@ def audit_turns(decisions, observations, actions, reads, state, profile=None, to
                             current = session.observation
                             _require(read['after_context_sha256'] == current['context_sha256'], 'Material query result hash differs')
                             used += 1
-                        expected_result = paced(route.get('actor_call_index'), expected_result)
+                        expected_result = paced(turn - 1, expected_result)
                     _require(route['result'] == expected_result, 'Environment result differs from independent business replay')
                     selected_routes.append(route)
-        _require(finished and selected is not None and selected == logged[key]['action'] == submitted[key]['action'], 'Decoded candidate/finish differs from submission')
+        _require(finished or rows[-1]['official_turn'] == (profile or {}).get('max_react_turns', 10),
+                 'Unfinished turn did not exhaust the official loop')
+        if key in unfiled:
+            from .failure import unfiled_receipt
+            _require(selected is None and not finished, 'Unfiled turn contains a submission or finish')
+            summaries[key] = {'completion_calls': len(rows), 'receipt': unfiled_receipt(key[1], key[0]),
+                              'submitted': False, 'unfiled': True}
+            _require(used == len(read_groups[key]), 'Unclaimed material query')
+            continue
+        _require(selected is not None and selected == logged[key]['action'] == submitted[key]['action'], 'Decoded candidate differs from submission')
         _require(used == len(read_groups[key]), 'Unclaimed material query')
         receipt = logged[key]['receipt']
         _require((receipt.get('round'), receipt.get('actor_id'), receipt.get('status'), receipt.get('code')) == (*key, 'queued', 'accepted_for_settlement'), 'Submission lacks queued receipt')

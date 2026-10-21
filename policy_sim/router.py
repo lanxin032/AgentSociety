@@ -156,6 +156,7 @@ class PolicyRouter(PolicyServices, ReActRouter):
             UUID(ask_id)
             trusted = {"actor": actor, "readonly": readonly, "ask_id": ask_id,
                 "actor_call_index": ctx.get("actor_call_index", -1), "call_index": 0,
+                "actor_turn": ctx.get("actor_turn", 0), "visible_asks": list(ctx.get("visible_asks", [])),
                 "receipts": [], "instruction": instruction, "variables": deepcopy(ctx.get("variables", {}))}
             token = _TRUSTED.set(trusted)
             try:
@@ -163,7 +164,7 @@ class PolicyRouter(PolicyServices, ReActRouter):
                     if not readonly:
                         raise ValueError("Initial observation is readonly")
                     value = await self.env.observe()
-                    return {"observation": deepcopy(self.observed[actor].observation)}, canonical({"status": "observed", "current_work_location": "agent.current_work"})
+                    return {"observation": deepcopy(self.observed[actor].observation)}, canonical(value)
                 if actor not in self.observed:
                     raise ValueError("Business request requires initial observation")
                 # The actor's structured template is the business decision itself.
@@ -197,6 +198,7 @@ class PolicyRouter(PolicyServices, ReActRouter):
             raise ValueError("Tool lacks trusted actor context")
         row = {"runtime_version": RUNTIME_VERSION, "round": self.world.round,
             "actor_id": trusted["actor"], "ask_id": trusted["ask_id"],
+            "actor_turn": trusted["actor_turn"], "visible_asks": trusted['visible_asks'],
             "actor_call_index": trusted["actor_call_index"], "ordinal": self._route_ordinal,
             "operation": tool_name, "payload": deepcopy(args), "routing": "deterministic_template_dispatch"}
         self._route_ordinal += 1
@@ -232,17 +234,18 @@ class PolicyRouter(PolicyServices, ReActRouter):
         if actor not in self.observed:
             raise ValueError("Initial legal observation required")
         if operation == "read_work":
-            result = self.observed[actor].read_work_once(payload["section"], payload.get("offset", 0))
-            return _paced_result(trusted.get("actor_call_index"), result)
+            result = self.observed[actor].read_work_once(payload["section"], payload.get("offset", 0),
+                ask_id=trusted['ask_id'], visible_asks=trusted['visible_asks'])
+            return _paced_result(trusted['actor_turn'] - 1, result)
         if operation == "read_materials":
             session = self.observed[actor]
             obs = session.observation
             ids = decode_material_read(payload, obs)
-            if session.seen_materials(ids):
+            if session.seen_materials(ids, trusted['visible_asks']):
                 # Identical re-read within the round: nothing new is served,
                 # the read quota is not charged again and no state moves.
                 from .work import material_stub
-                return _paced_result(trusted.get("actor_call_index"),
+                return _paced_result(trusted['actor_turn'] - 1,
                                      material_stub(ids, session.material_repeat_count(ids)))
             from .materials import lawful_sources
             sources = lawful_sources(self.world, actor)
@@ -250,13 +253,13 @@ class PolicyRouter(PolicyServices, ReActRouter):
                 raise ValueError("Request at most four smaller legal sources")
             result = self.world.read_materials(actor, ids)
             session.receive(result)
-            session.mark_materials(ids)
+            session.mark_materials(ids, trusted['ask_id'])
             append_jsonl(self.run_dir / "material_reads.jsonl", {"round": self.world.round,
                 "actor_id": actor, "read_index": obs["materials"]["reads_used"], "source_ids": ids,
                 "before_context_sha256": obs["context_sha256"], "result": result,
                 "after_context_sha256": session.observation["context_sha256"]})
             self.world.bind_material_context(actor, session.observation)
-            return _paced_result(trusted.get("actor_call_index"), business_material_result(result))
+            return _paced_result(trusted['actor_turn'] - 1, business_material_result(result))
         if operation != "submit" or trusted["readonly"]:
             raise ValueError("Mutation not authorized")
         action = validate_action(decode_candidate_choice(payload, self.observed[actor].observation), self.observed[actor].observation)

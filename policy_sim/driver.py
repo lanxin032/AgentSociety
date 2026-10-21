@@ -14,11 +14,12 @@ sys.path.insert(0, str(ROOT))
 from policy_sim.io import read_json, write_json, source_manifest
 from policy_sim.checkpoints import commit_round, validate_commit
 from policy_sim.spec import SPEC_VERSION
+from policy_sim.client import DRAIN_TIMEOUT
 
 
 class TaskDrain:
     """Track official awaiters without replacing the framework scheduler."""
-    def __init__(self, run_dir, timeout=675):
+    def __init__(self, run_dir, timeout=DRAIN_TIMEOUT):
         self.run_dir = run_dir
         self.timeout = timeout
         self.pending = set()
