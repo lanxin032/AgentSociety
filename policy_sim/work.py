@@ -178,9 +178,19 @@ def _size(value):
 
 def read_work_section(observation, section, offset=0):
     """Read complete business records, with a bounded record-based continuation."""
-    if section not in WORK_SECTIONS or type(offset) is not int or offset < 0:
+    if not isinstance(section, str) or type(offset) is not int or offset < 0:
         raise ValueError("Unknown legal work section or invalid offset")
-    if section == "source_catalog":
+    if section.startswith("projects/"):
+        parts = section.split("/")
+        if len(parts) != 3 or parts[2] not in ("tasks", "received_records"):
+            raise ValueError("Use projects/<project_id>/tasks or projects/<project_id>/received_records")
+        project = next((p for p in lawful_work(observation).get("projects", []) if p["id"] == parts[1]), None)
+        if project is None:
+            raise ValueError("Unknown legal project")
+        value = project[parts[2]]
+    elif section not in WORK_SECTIONS:
+        raise ValueError("Unknown legal work section or invalid offset")
+    elif section == "source_catalog":
         value = source_catalog(observation)
     elif section == "analyses":
         value = business_materials(observation.get("materials", {})).get("analyses", [])
@@ -201,6 +211,12 @@ def read_work_section(observation, section, offset=0):
             "as_of_round": observation.get("round"),
             "value": dict(selected) if is_dict else selected,
             "next_offset": end if end < len(records) else None, "complete": end == len(records)}
+    if section == "projects":
+        for project in records[offset:]:
+            if _size(page([project])) > SECTION_BYTES:
+                for field in ("tasks", "received_records"):
+                    project[field] = {"read_work": {"section": f"projects/{project['id']}/{field}", "offset": 0},
+                                      "count": len(project[field]), "complete": not project[field]}
     selected = []
     for record in records[offset:]:
         if _size(page(selected + [record])) > SECTION_BYTES:

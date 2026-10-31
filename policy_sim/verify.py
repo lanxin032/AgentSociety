@@ -26,7 +26,7 @@ def _finite(value):
 
 def _project_accounting(state):
     """Rebuild stage times from produced records/events, not stored metrics."""
-    (errors, projects, records, messages) = ([], {}, {}, {})
+    (errors, projects, messages) = ([], {}, {})
     learned = {actor: {} for actor in ACTORS}
     (repaired, technical_charges) = (set(), defaultdict(float))
     (config, end) = (state.get('config', {}), state.get('round', 0))
@@ -41,7 +41,6 @@ def _project_accounting(state):
                 projects[pid] = dict(project=pid, construction='not_started', built_at=None, physical='not_commissioned', effective_at=None, commissioned_at=None, administrative='open', accepted_at=None, cancelled_at=None, revision=0, facilities=None, construction_tasks={}, assessment=None, terminal=None)
             elif kind == 'record_created':
                 record = event['record']
-                records[record['id']] = record
                 learned[record['author']][record['id']] = record
                 (pid, data) = (record['object'], record['data'])
                 if pid not in projects:
@@ -93,10 +92,6 @@ def _project_accounting(state):
                 m = messages[event['message']]
                 for record in m.get('payload', {}).get('records', []):
                     learned[m['recipient']][record['id']] = record
-            elif kind == 'zero_friction_shared':
-                for actor in event['recipients']:
-                    record = records[event['record']]
-                    learned[actor][record['id']] = record
             elif kind == 'project_plan_drafted':
                 projects[event['project']]['revision'] = event['revision']
             elif kind == 'project_built':
@@ -357,15 +352,7 @@ def audit_information_flow(state):
                 revisions[record['object']] = record.get('data', {}).get('revision')
                 active.discard(record['object'])
         elif kind == 'zero_friction_shared':
-            rid = event.get('record')
-            if not config.get('zero_communication_friction') or rid not in records:
-                errors.append('Free ordinary synchronization lacks a produced record or sensitivity condition')
-                continue
-            for actor in event.get('recipients', []):
-                if str(actor) not in learned:
-                    errors.append('Invalid free-sharing recipient')
-                else:
-                    learned[str(actor)][rid] = deepcopy(records[rid])
+            errors.append('Record sharing requires a received business message')
         elif kind == 'message_created':
             message = deepcopy(event.get('message', {}))
             mid = message.get('id')
@@ -399,7 +386,7 @@ def audit_information_flow(state):
             if message is None or message.get('delivered_round') is not None:
                 errors.append('Unknown or duplicated message delivery')
                 continue
-            if r != message['deliver_round'] or event.get('delivery_round') != r or event.get('recipient') != message['recipient']:
+            if r < message['deliver_round'] or event.get('delivery_round') != r or event.get('recipient') != message['recipient']:
                 errors.append('Message arrived outside its recorded delivery time or recipient')
             message['delivered_round'] = r
             for record in message.get('payload', {}).get('records', []):
@@ -596,7 +583,7 @@ def valid_native_chunk(measured, requested, *, workload_complete=False, last_chu
 def verify_run(run_dir, root=None):
     """Audit a committed segment, source binding and every actual request."""
     from .audit import audit_native
-    from .runtime import code_manifest
+    from .runtime import code_manifest, runtime_environment
     from .checkpoints import validate_commit
     run_dir = Path(run_dir).resolve()
     root = Path(root).resolve() if root else Path(__file__).resolve().parents[1]
@@ -609,16 +596,21 @@ def verify_run(run_dir, root=None):
             errors.append('Source/version differs from frozen configuration')
         if frozen.get('record', {}).get('runtime_profile') != frozen.get('runtime_profile'):
             errors.append('Frozen record/profile differs')
+        if frozen.get('runtime_environment') != runtime_environment():
+            errors.append('Runtime environment differs from frozen configuration')
         world = _read(run_dir / 'world.json')
         if any(world.get(k) != frozen.get(k) for k in ('seed', 'horizon', 'scenario')):
             errors.append('World identity differs from frozen run')
+        if world.get('policy') != frozen.get('record', {}).get('policy'):
+            errors.append('World policy differs from frozen record')
         driver = _read(run_dir / 'driver_latest.json')
         if (driver.get('ok') is not True or driver.get('ray_shutdown') is not True
                 or driver.get('completed_steps') != committed['round']
                 or driver.get('routing') != 'official_PersonAgent_ReActRouter'
                 or driver.get('framework_version') != frozen['runtime_profile']['framework_version']
                 or driver.get('source_manifest') != frozen.get('code_manifest')
-                or driver.get('runtime_profile') != frozen.get('runtime_profile')):
+                or driver.get('runtime_profile') != frozen.get('runtime_profile')
+                or driver.get('runtime_environment') != frozen.get('runtime_environment')):
             errors.append('Official driver evidence incomplete or different')
         controllers = [_read(p) for p in sorted(run_dir.glob('controller-*.json'))]
         if not controllers:

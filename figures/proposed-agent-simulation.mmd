@@ -1,0 +1,44 @@
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Arial, PingFang SC, sans-serif", "fontSize": "16px", "lineColor": "#64748b", "primaryTextColor": "#0f172a", "edgeLabelBackground": "#ffffff"}, "flowchart": {"curve": "linear", "nodeSpacing": 24, "rankSpacing": 27, "htmlLabels": false, "wrappingWidth": 320, "padding": 32}, "themeCSS": ".node foreignObject, .nodeLabel, .nodeLabel div { overflow: visible !important; }"}}%%
+flowchart LR
+    subgraph runtime["官方生命周期"]
+        direction TB
+        init["agent_specs / 角色 Skill<br/>注入 ServiceProxy<br/>AgentSociety.init"]
+        scheduler["AgentSociety.step / run<br/>官方 Ray Tasks 调度"]
+        init --> scheduler
+    end
+    subgraph behavior["每个主体 · 官方 agentic loop"]
+        direction TB
+        restore["from_workspace<br/>恢复主体、记忆和技能"]
+        agent["PersonAgent.step<br/>run_react_loop<br/>观察 → 自主决策"]
+        router["ask_env<br/>官方 ReActRouter<br/>选择注册工具"]
+        tools["PolicyEnv（EnvBase）<br/>@tool 查询与单次提交"]
+        finish["finish / 迭代耗尽<br/>官方记忆与工作区保存"]
+        restore --> agent --> router --> tools
+        tools -->|真实工具反馈| agent
+        agent -->|本主体结束| finish
+    end
+    subgraph boundary["整轮结算与验收"]
+        direction TB
+        settle["验收四主体返回结果<br/>通过后 env.step 结算<br/>官方邮箱整轮送达"]
+        save["官方工作区保存<br/>项目一致性检查与 commit"]
+        done{"有限任务全部完成？"}
+        report["独立审计与指标报告"]
+        next["下一轮<br/>调用 society.step"]
+        pause["技术失败暂停<br/>保留证据并排空在途请求"]
+        settle --> save --> done
+        done -->|是| report
+        done -->|否| next
+        settle -->|技术失败| pause
+        save -->|保存失败| pause
+    end
+    runtime -->|逐轮调度| behavior
+    behavior -->|全部主体返回后| boundary
+    class init,scheduler,restore,agent,router,finish,next framework;
+    class tools application;
+    class settle,save,done,report,pause evidence;
+    classDef framework fill:#e8f0fe,stroke:#2563eb,stroke-width:1.5px,color:#163b72;
+    classDef application fill:#fff3e6,stroke:#d97706,stroke-width:1.5px,color:#713f12;
+    classDef evidence fill:#eaf5ef,stroke:#338062,stroke-width:1.5px,color:#14523a;
+    style runtime fill:#f8fafc,stroke:#cbd5e1
+    style behavior fill:#f8fafc,stroke:#cbd5e1
+    style boundary fill:#f8fafc,stroke:#cbd5e1

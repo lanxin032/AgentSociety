@@ -65,6 +65,7 @@ class VisibilityAuditTests(unittest.TestCase):
                   'data': {'revision': 1, 'success': True, 'effective_at': 2}}
         knowledge['records'][record['id']] = deepcopy(record)
         self.world.records[record['id']] = deepcopy(record)
+        self.world._rebuild_indices()  # rebuild after direct fixture injection
         observation, state = self.world.observe(2), self.world.export_state()
         self.assertEqual(observation['projects'][0]['revision'], 1)
         self.assertEqual(observation['projects'][0]['construction'], 'built')

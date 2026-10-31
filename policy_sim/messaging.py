@@ -74,8 +74,7 @@ class PolicyMailbox:
             self._check_receipts(self.receipts)
             self.t = t
             await self.native.init(t)
-            due = [mid for mid, m in world.messages.items()
-                   if m['delivered_round'] is None and m['deliver_round'] <= world.round]
+            due = world.pending_message_ids()
             # Validate every outbound envelope before any native send.
             contents = {mid: canonical(self._envelope(mid)) for mid in due}
             sent = {}

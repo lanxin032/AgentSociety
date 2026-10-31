@@ -38,8 +38,7 @@ def lawful_sources(world, actor_id):
         fields = ('id', 'facility', 'district', 'text', 'category', 'reported', 'public_episode')
         item = source('ticket:' + ticket['id'], 'ticket', ticket['id'], ticket['reported'], {key: ticket[key] for key in fields}, actor_id, ticket['reported'])
         if actor_id in (2, 3):
-            grants = [e['round'] for e in world.events if e['kind'] == 'routed' and e.get('ticket') == ticket['id'] and (e.get('department') == actor_id) or (e['kind'] == 'message_delivered' and e.get('object') == ticket['id'] and (e.get('recipient') == actor_id))]
-            item['received_round'] = min(grants, default=world.round)
+            item['received_round'] = world._indices['ticket_received'].get((actor_id, ticket['id']), world.round)
         result[item['source_id']] = item
     if actor_id == 4:
         for contact in world.contacts:
@@ -48,11 +47,10 @@ def lawful_sources(world, actor_id):
             result[item['source_id']] = item
     for record in world.knowledge[str(actor_id)]['records'].values():
         received = record['created_round']
-        if record['author'] != actor_id and (not world.config['zero_communication_friction']):
-            deliveries = [m['delivered_round'] for m in world.messages.values() if m['recipient'] == actor_id and m['delivered_round'] is not None and any((r.get('id') == record['id'] for r in m.get('payload', {}).get('records', [])))]
-            if not deliveries:
+        if record['author'] != actor_id:
+            received = world._indices['record_received'].get((actor_id, record['id']))
+            if received is None:
                 raise ValueError('Received record lacks lawful delivery provenance')
-            received = min(deliveries)
         item = source('record:' + record['id'], 'record', record['object'], record['created_round'], record, actor_id, received)
         result[item['source_id']] = item
     return dict(sorted(result.items()))

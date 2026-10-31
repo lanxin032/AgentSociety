@@ -68,7 +68,10 @@ async def run(args, report):
 
     class AuditedSociety(AgentSociety):
         async def _await_ref(self, reference):
-            return await drain.wait(reference, self._validate_result)
+            result = await drain.wait(reference, self._validate_result)
+            if getattr(self, "_audit_steps", False):
+                await actor.owner_actor_results.remote(result["results"])
+            return result
 
         def _validate_result(self, result):
             if not getattr(self, "_audit_steps", False):
@@ -97,10 +100,9 @@ async def run(args, report):
             return result
 
         async def to_workspace(self, *, tick=None):
-            # Installed default only logs persistence errors; this experiment
-            # must stop before marking an unpersisted environment step complete.
-            await self._env_router.to_workspaces()
             await super().to_workspace(tick=tick)
+            # The installed society logs environment save errors instead of raising.
+            await actor.owner_checkpoint_status.remote()
 
     envvars = {key: value for key, value in os.environ.items()
                if key.startswith("AGENTSOCIETY_") or key in {"WORKSPACE_PATH", "PYTHONPATH", "LITELLM_LOCAL_MODEL_COST_MAP", "RAY_USAGE_STATS_ENABLED", "HF_HUB_OFFLINE"}}
@@ -122,8 +124,8 @@ async def run(args, report):
         proxy.env = env
         if args.resume:
             society = await AuditedSociety.from_workspace(args.run_dir, env_router=env, service_proxy=proxy)
-            if not await env.from_workspaces():
-                raise RuntimeError("Checkpoint restore failed")
+            await society.init()
+            await actor.owner_checkpoint_status.remote()
             restored = await actor.owner_snapshot.remote()
             report["restored_round"] = society.step_count
             if restored.get("round") != society.step_count:
@@ -132,8 +134,9 @@ async def run(args, report):
             from policy_sim.agent import RUNTIME_VERSION
             config = {"decision_mode": args.mode, "runtime_version": RUNTIME_VERSION,
                 "runtime_profile": args.runtime_profile, "enable_memory": True,
-                "enable_todo_list": False, "max_react_turns": 10,
-                "default_activated_skill_ids": []}
+                "enable_todo_list": True, "max_react_turns": 10,
+                "extra_skill_paths": [str(ROOT / "custom/skills")],
+                "default_activated_skill_ids": ["custom@policy-role"]}
             config.update({k: v for k, v in args.runtime_profile.items() if k in (
                 "memory_context_max_chars", "recent_memory_limit", "memory_consolidation_pending_threshold",
                 "memory_consolidation_interval_steps", "memory_high_importance_threshold")})
@@ -204,7 +207,7 @@ def failure_details(error):
 
 
 def main():
-    from policy_sim.runtime import code_manifest
+    from policy_sim.runtime import code_manifest, runtime_environment
     parser = argparse.ArgumentParser()
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--record", type=Path, required=True)
@@ -223,6 +226,7 @@ def main():
     os.environ["AGENTSOCIETY_LLM_REQUEST_TIMEOUT"] = "660"
     if importlib.metadata.version("agentsociety2") != record['runtime_profile']['framework_version']:
         raise SystemExit("Runtime requires its exact frozen AgentSociety2 version")
+    environment = runtime_environment()
     args.runtime_profile = validate_profile(record['runtime_profile'])
     request_settings = settings_for_purpose(args.runtime_profile)
     args.seed, args.horizon = record["seed"], record["horizon"]
@@ -235,7 +239,8 @@ def main():
         raise SystemExit("Run must be under project runs")
     frozen = {"version": SPEC_VERSION, "mode": args.mode, "record": record,
               "seed": args.seed, "horizon": args.horizon, "scenario": args.scenario,
-              "code_manifest": code_manifest(ROOT), "request_settings": request_settings}
+              "code_manifest": code_manifest(ROOT), "request_settings": request_settings,
+              "runtime_environment": environment}
     frozen['runtime_profile'] = args.runtime_profile
     if args.resume:
         if not (args.run_dir / "committed.json").is_file() or (args.run_dir / "partial_failure.json").exists():
@@ -253,6 +258,7 @@ def main():
               "scenario_id": record["scenario_id"], "scenario": args.scenario,
               "framework_version": importlib.metadata.version("agentsociety2"),
               "source_manifest": code_manifest(ROOT), "request_settings": request_settings,
+              "runtime_environment": environment,
               "requested_steps": args.steps, "until_complete": args.until_complete, "llm_seed_supported": False,
               "routing": "official_PersonAgent_ReActRouter"}
     report.update(runtime_profile=args.runtime_profile, model_settings=request_settings)

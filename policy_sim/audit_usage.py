@@ -61,7 +61,7 @@ def audit_run_usage(run_dir, frozen, decisions=(), services=(), memories=(), led
     for rid, end in ends.items():
         start = starts[rid]
         _require(end['event'] == 'request_finished', 'Failed request in successful run')
-        _require(all(end.get(k) == start.get(k) for k in ('purpose', 'round', 'actor_id', 'messages', 'request_options', 'request_settings')), 'Changed request binding')
+        _require(all(end.get(k) == start.get(k) for k in ('purpose', 'round', 'actor_id', 'ask_id', 'substep', 'messages', 'request_options', 'request_settings')), 'Changed request binding')
         _require(end['unix'] >= start['unix'], 'Terminal event predates request')
         raw = end['raw_response']
         _require(end.get('usage_source') == 'provider_response' and end.get('usage') == raw.get('usage'), 'Raw response usage differs')
@@ -80,13 +80,16 @@ def audit_run_usage(run_dir, frozen, decisions=(), services=(), memories=(), led
         _require(receipt.get('status') == 200 and receipt.get('request_sha256') == hashlib.sha256(wire).hexdigest() and receipt.get('request_bytes') == len(wire), 'Paid receipt payload/status differs')
     _require(set(ledger) == set(ends), 'Missing paid receipt')
     used = set()
-    traces = [(r, 'environment_routing') for r in environment_decisions] + [(r, 'agent_decision') for r in decisions] + [(r, 'policy_' + r['service']) for r in services] + [(r, 'memory') for r in hydrate_traces(root, memories)]
+    traces = [(r, 'environment_routing') for r in hydrate_traces(root, environment_decisions)] + [(r, 'agent_decision') for r in decisions] + [(r, 'policy_' + r['service']) for r in services] + [(r, 'memory') for r in hydrate_traces(root, memories)]
     for trace, purpose in traces:
         rid = trace.get('request_id')
         _require(rid in ends and rid not in used, 'Missing/reused transcript UUID')
         used.add(rid)
         end = ends[rid]
         _require((end['purpose'], end['round'], end['actor_id']) == (purpose, trace['round'], trace['actor_id']), 'Transcript request attribution differs')
+        if purpose == 'environment_routing':
+            _require(trace.get('offline') is False and end.get('ask_id') == trace.get('ask_id')
+                     and end.get('substep') == trace.get('router_call_index'), 'Router request ask/call binding differs')
         if purpose == 'memory':
             prior = [ends[r['request_id']] for r in decisions if (r['round'], r['actor_id']) == (trace['round'], trace['actor_id'])]
             _require(prior and trace.get('offline') is False and starts[rid]['unix'] >= max(r['unix'] for r in prior), 'Memory request precedes or lacks completed actor turn')

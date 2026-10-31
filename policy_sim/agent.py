@@ -1,36 +1,21 @@
-"""Official PersonAgent lifecycle with strict business completion boundaries."""
+"""Official PersonAgent lifecycle with policy permissions and evidence."""
 from copy import deepcopy
 import json
 from pathlib import Path
-from jsonschema import validate as validate_schema
+from jsonschema import ValidationError, validate as validate_schema
 from agentsociety2.agent.person import PersonAgent
 from agentsociety2.agent.base import ReactToolResult
 from .io import append_jsonl, read_json, write_json
-from .interface import canonical, decode_candidate_choice, decode_material_read
+from .interface import canonical, RUNTIME_VERSION
 from .prompt import WORLD_DESCRIPTION
-from .work import WorkContext
 from uuid import uuid4
-from .router import RUNTIME_VERSION
+
+ROLE_SKILL_ID = "custom@policy-role"
+ROLE_SKILL_ROOT = Path(__file__).resolve().parent.parent / "custom/skills/policy-role"
 
 
 class TurnIncomplete(RuntimeError):
-    """An unfinished model turn cannot commit memory or advance the world."""
-
-
-def strict_object(text):
-    def pairs(items):
-        value = {}
-        for key, item in items:
-            if key in value:
-                raise ValueError("Duplicate field: " + key)
-            value[key] = item
-        return value
-    value = json.loads(text, object_pairs_hook=pairs,
-        parse_constant=lambda s: (_ for _ in ()).throw(ValueError(s)))
-    if not isinstance(value, dict):
-        raise ValueError("Tool arguments must be an object")
-    canonical(value)
-    return value
+    """A technical failure prevents the turn from being accepted."""
 
 
 def tool_response(name, arguments):
@@ -115,16 +100,12 @@ class CheckedMemoryRuntime(PersonMemoryRuntime):
 
 class PolicyOfficer(PersonAgent):
     def build_agent_json(self, *, tick=None, t=None):
-        # Official positioning: <agent> carries identity and a brief state
-        # pointer, not the full workbench — the overview arrives via observe
-        # and read_work (attempt-0059..0068 attention-overload lesson).
         value = super().build_agent_json(tick=tick, t=t)
         observation = getattr(self, "_policy_observation", None)
         if observation is not None:
             from .work import business_receipt
             queued = getattr(self, "_submission", None)
-            value["current_work"] = {"phase": "finish" if queued else "choose",
-                "round": observation.get("round"), "role": observation.get("role"),
+            value["current_work"] = {"round": observation.get("round"), "role": observation.get("role"),
                 "candidate_count": len(observation.get("candidate_options", [])),
                 "queued_receipt": business_receipt(queued["receipt"]) if queued else None,
                 "note": "完整候选、材料与字段经observe和read_work获取。"}
@@ -156,8 +137,16 @@ class PolicyOfficer(PersonAgent):
         # Official restore clears this field even when initialized_at survives.
         # Both new and restored actors use the same public business description.
         self._world_description = WORLD_DESCRIPTION
-        if self._max_react_turns != 10 or not self._enable_memory or self._enable_todo_list:
-            raise ValueError("PolicyOfficer requires official ten-turn memory lifecycle and no TODO tools")
+        if self._max_react_turns != 10 or not self._enable_memory or not self._enable_todo_list:
+            raise ValueError("PolicyOfficer requires official ten-turn memory and TODO lifecycle")
+        role = self._skill_registry.get(ROLE_SKILL_ID)
+        if (set(self._config.get("default_activated_skill_ids") or []) != {ROLE_SKILL_ID}
+                or ROLE_SKILL_ROOT.parent not in self._extra_skill_paths
+                or role is None or role.root != ROLE_SKILL_ROOT
+                or role.script or role.hooks or role.resource_files() != ["SKILL.md"]
+                or ROLE_SKILL_ID not in self.skill_runtime.activated_skill_ids()
+                or not self.skill_runtime.load_skill_doc(ROLE_SKILL_ID)):
+            raise ValueError("Missing or invalid default policy role skill")
         if self._config.get("runtime_version") != RUNTIME_VERSION:
             raise ValueError("Incompatible officer checkpoint")
         self._run_dir = next((p for p in self.workspace_root_path().parents if (p / "run_config.json").is_file()), None)
@@ -181,13 +170,11 @@ class PolicyOfficer(PersonAgent):
         self._official_turn = 0
         self._last_request = {}
         self._last_ask_id = None
-        self.skill_runtime.set_visible_skills(set())
-
-    async def _load_world_description(self):
-        return WORLD_DESCRIPTION
 
     def _refresh_visible_skills(self):
-        self.skill_runtime.set_visible_skills(set())
+        # 2.8.7 also discovers scripted built-ins; this task permits prose only.
+        super()._refresh_visible_skills()
+        self.skill_runtime.set_visible_skills(self.skill_runtime.visible_skill_ids() & {ROLE_SKILL_ID})
 
     def _context(self):
         return {"run_id": self._frozen["record"]["run_id"], "attempt_id": str(self._run_dir.resolve()),
@@ -202,7 +189,7 @@ class PolicyOfficer(PersonAgent):
     def env_ask_env_ctx_overlay(self):
         return {**super().env_ask_env_ctx_overlay(), "actor_id": self.id, "round": self._policy_round,
                 "actor_call_index": self._completion_calls - 1, "actor_turn": self._official_turn,
-                "visible_asks": getattr(self, '_visible_asks', []), "lifecycle_complete": False}
+                "visible_asks": getattr(self, '_visible_asks', [])}
 
     async def step(self, tick, t):
         self._policy_round = self._step_count
@@ -218,13 +205,11 @@ class PolicyOfficer(PersonAgent):
             unfiled = self._submission is None
             if unfiled:
                 from .failure import unfiled_receipt
-                await self._env.ask({**self.env_ask_env_ctx_overlay(), "lifecycle_unfiled": True}, "abandon", readonly=False)
                 result = {"runtime_version": RUNTIME_VERSION, "actor_id": self.id, "round": self._policy_round,
                     "receipt": unfiled_receipt(self.id, self._policy_round),
                     "submitted": False, "unfiled": True, "step_completed": True,
                     "schema_repairs": self._schema_errors, "completion_calls": self._completion_calls}
             else:
-                await self._env.ask({**self.env_ask_env_ctx_overlay(), "lifecycle_complete": True}, "complete", readonly=False)
                 result = {"runtime_version": RUNTIME_VERSION, "actor_id": self.id, "round": self._policy_round,
                     **self._submission, "submitted": True, "unfiled": False, "step_completed": True,
                     "schema_repairs": self._schema_errors, "completion_calls": self._completion_calls}
@@ -245,31 +230,27 @@ class PolicyOfficer(PersonAgent):
         raise ValueError("External QA is not part of the policy execution interface")
 
     def _parse_react_responses(self, response, *, readonly=False):
-        """Only response integrity and domain completion extend the official parser."""
+        """Enforce the native wire boundary, then use the 2.8.7 parser and retry."""
+        from .client import validate_native_response
         error = ""
         try:
             if len(response.choices) != 1 or response.choices[0].finish_reason not in {"tool_calls", "stop"}:
                 raise ValueError("Incomplete response: no tools in this batch executed")
-            calls = response.choices[0].message.tool_calls or []
-            if not calls:
-                raise ValueError("Use the provided structured tool calls")
+            error = validate_native_response(response)
+            if error:
+                raise ValueError(error)
             schemas = {x["function"]["name"]: x["function"]["parameters"]
                        for x in self._last_request.get("request_options", {}).get("tools", [])}
-            for call in calls:
+            for call in response.choices[0].message.tool_calls:
                 if call.function.name not in schemas:
                     raise ValueError("Tool not offered in this request")
-                validate_schema(strict_object(call.function.arguments), schemas[call.function.name])
-            if any(c.function.name == "finish" for c in calls) and (self._submission is None or len(calls) != 1):
-                raise ValueError("Finish requires the queued business receipt from a previous tool result")
+                validate_schema(json.loads(call.function.arguments), schemas[call.function.name])
             decisions, error = super()._parse_react_responses(response, readonly=readonly)
             if not error and any(d.action == "finish" for d in decisions):
                 self._explicit_finish = True
         except (ValueError, TypeError, AttributeError, IndexError) as exc:
             decisions, error = [], str(exc)
-        except Exception as exc:
-            from jsonschema import ValidationError
-            if not isinstance(exc, ValidationError):
-                raise
+        except ValidationError as exc:
             decisions, error = [], exc.message
         if error:
             self._schema_errors += 1
@@ -293,6 +274,12 @@ class PolicyOfficer(PersonAgent):
         try:
             result, answer = await super().ask_env({**ctx, "ask_id": ask_id}, message, readonly, **kwargs)
             self._last_ask_id = ask_id
+            if message == "<observe>":
+                observation = result.get("observation")
+                if (not isinstance(observation, dict) or type(observation.get("actor_id")) is not int
+                        or observation["actor_id"] != self.id or type(observation.get("round")) is not int
+                        or observation["round"] != self._policy_round):
+                    raise ValueError("Missing or inconsistent initial business observation")
             if "observation" in result and result["observation"] != self._policy_observation:
                 self._policy_observation = deepcopy(result["observation"])
             for receipt in result.get("receipts", []):
@@ -309,7 +296,11 @@ class PolicyOfficer(PersonAgent):
             self._last_ask_id = None
         # Workspace isolation protects research traces and authoritative business
         # files. The actual read/write/memory operations remain official tools.
-        if action in {"read", "write", "append", "grep", "list"}:
+        if action == "execute_skill_script":
+            result = ReactToolResult(False, "Policy role skills contain guidance only, not scripts.", {})
+        elif action == "read_skill_file" and args.get("path") != "SKILL.md":
+            result = ReactToolResult(False, "Only the role guidance is available in the skill.", {})
+        elif action in {"read", "write", "append", "grep", "list"}:
             path = str(args.get("path", ""))
             resolved = (self.workspace_root_path() / path).resolve()
             notes = self.workspace_root_path() / "notes"

@@ -5,8 +5,8 @@ import json
 
 from .providers import provider_route
 
-SCHEMA_VERSION = "native-tools-profile-4"
-EXECUTION_POLICY = "official-finite-4"
+SCHEMA_VERSION = "native-tools-profile-5"
+EXECUTION_POLICY = "official-finite-5"
 PURPOSES = ("agent_decision", "environment_routing", "memory", "policy_A", "policy_C")
 MODEL = "deepseek-flash"
 
@@ -21,12 +21,12 @@ def make_profile(thinking="disabled", *, provider=None):
         "model": route["model"], "provider_route": route,
         "max_tokens": 16384, "temperature": 0.2,
         "upstream_timeout_seconds": 600, "client_timeout_seconds": 660,
-        "max_react_turns": 10, "router_kind": "deterministic_dispatch", "memory_enabled": True,
-        "todo_enabled": False, "memory_context_max_chars": 4000,
+        "max_react_turns": 10, "router_kind": "official_react", "memory_enabled": True,
+        "todo_enabled": True, "memory_context_max_chars": 4000,
         "recent_memory_limit": 8, "memory_consolidation_pending_threshold": 10,
         "memory_consolidation_interval_steps": 8,
         "memory_high_importance_threshold": 0.75,
-        "workload_mode": "finite", "prompt_version": "official-native-16",
+        "workload_mode": "finite", "prompt_version": "official-native-17",
         "token_metric": "T_system", "max_material_reads_per_round": None,
     }
 

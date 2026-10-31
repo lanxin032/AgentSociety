@@ -7,11 +7,53 @@ from unittest.mock import patch
 from types import SimpleNamespace
 
 from policy_sim.io import write_json, read_json
-from policy_sim.profiles import make_profile
-from policy_sim.protocol import make_manifest, validate_manifest, prepare
-from policy_sim.execution import AttemptRegistry, ExecutionError, execute_stage, validate_authorization
+from policy_sim.profiles import make_profile, settings_for_purpose
+from policy_sim.protocol import make_manifest, validate_manifest, prepare, require_baseline
+from policy_sim.execution import (AttemptRegistry, ExecutionError, execute_stage, validate_authorization,
+                                  authorization_paths, file_hash, source_hash)
 from policy_sim.checkpoints import commit_round, validate_commit, restore_payload_links
+from policy_sim.runtime import code_manifest
 from policy_sim.router import RUNTIME_VERSION
+
+
+def make_checkpoint(path, root, record):
+    path.mkdir(parents=True, exist_ok=True)
+    for name, value in [('world.json', {'round': 1}), ('metrics.json', {}), ('SOCIETY.json', {}),
+                        ('SOCIETY_STEP.json', {'step_count': 1}), ('record.json', record),
+                        ('run_config.json', {'record': record, 'code_manifest': code_manifest(root)})]:
+        write_json(path / name, value)
+    for actor in range(1, 5):
+        write_json(path / 'agents' / str(actor) / 'AGENT.json', {'agent_id': actor, 'step_count': 1})
+    commit_round(path, 1, {'round': 1}, [])
+
+
+def make_paused_batch(root, manifest_path, auth_path, auth, control):
+    manifest = read_json(manifest_path)
+    output, record = root / 'runs/batch', manifest['runs'][0]
+    failed = output / record['run_id']
+    make_checkpoint(failed, root, record)
+    registry = AttemptRegistry(control / 'attempts.jsonl')
+    aid = registry.start(record['run_id'], auth['authorization_id'], auth['max_attempts'],
+                         attempt_scope='authorization')
+    registry.append('technical_failure', aid)
+    rows = {r['run_id']: {'status': 'prepared'} for r in manifest['runs']}
+    rows[record['run_id']].update(status='paused', output_path=str(failed), attempt_id=aid, committed_steps=1)
+    write_json(output / 'batch_status.json', {'source_sha256': source_hash(root),
+        'manifest_sha256': file_hash(manifest_path), 'authorization_sha256': file_hash(auth_path),
+        'stage': manifest['stage'], 'status': 'paused', 'runs': rows})
+    return output
+
+
+def authorized_baseline(root):
+    write_json(root / 'runs/api-local-budget.json', [{'request': 1, 'status': 200,
+        'reserved_rmb': 0.1, 'estimated_rmb': 0.01, 'input_rate': 2.0,
+        'output_rate': 8.0, 'price_version': 'fixture-historical'}])
+    prepared = prepare(root, root / 'runs/preflight')
+    manifest_path, auth_path = Path(prepared['manifest']), root / 'runs/preflight/authorization.json'
+    auth = {**prepared['proposal'], 'approved': True, 'explicit_stage_authorization': True,
+            'user_evidence_reference': 'offline fixture', 'approval_reference': 'offline fixture'}
+    write_json(auth_path, auth)
+    return manifest_path, auth_path, auth
 
 
 class ExecutionIntegrityTests(unittest.TestCase):
@@ -79,6 +121,70 @@ class ExecutionIntegrityTests(unittest.TestCase):
                 with self.assertRaises(ExecutionError):
                     validate_authorization({**auth, **mutation}, path, 'finite_baseline', root)
 
+    def test_comparisons_require_independently_audited_000_policy(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            run = root / 'runs/baseline'
+            manifest = make_manifest(root, 'finite_endpoints')
+            write_json(run / 'run_config.json', {'mode': 'llm', 'record': {'policy': '000'},
+                'runtime_profile': manifest['runtime_profile'], 'code_manifest': code_manifest(root)})
+            write_json(run / 'committed.json', {})
+            manifest['baseline_evidence'] = {'run_dir': 'runs/baseline', 'committed_sha256': file_hash(run / 'committed.json')}
+            result = {'passed': True, 'workload_complete': True, 'policy': '000'}
+            with patch('policy_sim.verify.verify_run', return_value=result):
+                require_baseline(manifest, root)
+            for policy in ('111', None):
+                with patch('policy_sim.verify.verify_run', return_value={**result, 'policy': policy}):
+                    with self.assertRaises(ExecutionError):
+                        require_baseline(manifest, root)
+
+    def test_open_stage_rejects_old_reservations_but_allows_active_requests(self):
+        from policy_sim.budget import open_stage_ledger
+        from policy_sim.proxy import BudgetError
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest_path, auth_path, auth = authorized_baseline(root)
+            payload = {**settings_for_purpose(read_json(manifest_path)['runtime_profile']),
+                       'messages': [{'role': 'user', 'content': 'offline'}]}
+            ledger = open_stage_ledger(root, auth_path, manifest_path, 'finite_baseline')
+            first, _ = ledger.reserve(payload)
+            second, _ = ledger.reserve(payload)
+            self.assertEqual([ledger.records[i]['status'] for i in (first, second)], ['reserved', 'reserved'])
+            ledger.finish(first, 200, {'prompt_tokens': 2, 'completion_tokens': 3})
+            ledger.finish(second, 200, {'prompt_tokens': 2, 'completion_tokens': 3})
+            reopened = open_stage_ledger(root, auth_path, manifest_path, 'finite_baseline')
+            reopened.reserve(payload)
+            path = authorization_paths(auth, root)['ledger']
+            before = path.read_bytes()
+            with self.assertRaisesRegex(BudgetError, 'unsettled.*reserved'):
+                open_stage_ledger(root, auth_path, manifest_path, 'finite_baseline')
+            self.assertEqual(path.read_bytes(), before)
+
+    def test_resume_rejects_old_reservation_before_launch(self):
+        from policy_sim.budget import open_stage_ledger
+        from policy_sim.proxy import BudgetError
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest_path, auth_path, auth = authorized_baseline(root)
+            payload = {**settings_for_purpose(read_json(manifest_path)['runtime_profile']),
+                       'messages': [{'role': 'user', 'content': 'offline'}]}
+            open_stage_ledger(root, auth_path, manifest_path, 'finite_baseline').reserve(payload)
+            control = authorization_paths(auth, root)['control']
+            output = make_paused_batch(root, manifest_path, auth_path, auth, control)
+            ledger_path = authorization_paths(auth, root)['ledger']
+            ledger_before, status_before = ledger_path.read_bytes(), (output / 'batch_status.json').read_bytes()
+            attempts_before = (control / 'attempts.jsonl').read_bytes()
+            calls = []
+            def runner(command, **kwargs):
+                calls.append(command)
+                return SimpleNamespace(returncode=1)
+            with self.assertRaisesRegex(BudgetError, 'unsettled.*reserved'):
+                execute_stage(root, manifest_path, auth_path, output, resume=True, runner=runner)
+            self.assertFalse(calls)
+            self.assertEqual(ledger_path.read_bytes(), ledger_before)
+            self.assertEqual((output / 'batch_status.json').read_bytes(), status_before)
+            self.assertEqual((control / 'attempts.jsonl').read_bytes(), attempts_before)
+
     def test_explicit_continuation_keeps_initial_cap_and_parent(self):
         with tempfile.TemporaryDirectory() as directory:
             registry = AttemptRegistry(Path(directory) / 'attempts.jsonl')
@@ -90,6 +196,12 @@ class ExecutionIntegrityTests(unittest.TestCase):
             self.assertEqual(registry.latest(second)['recovery_of'], first)
             with self.assertRaises(ExecutionError):
                 registry.start_continuation('run', 'auth', first, 'a' * 64)
+            registry.append('complete', second, clean_commit=True)
+            with self.assertRaises(ExecutionError):
+                registry.start('other', 'auth', 1, attempt_scope='authorization')
+            registry.start('other', 'auth', 2, attempt_scope='authorization')
+            with self.assertRaises(ExecutionError):
+                registry.start('third', 'auth', 2, attempt_scope='authorization')
             self.assertEqual(AttemptRegistry(registry.path).latest(second)['checkpoint_sha256'], 'a' * 64)
 
     def test_incomplete_attempt_launches_once_and_pauses(self):
@@ -108,7 +220,8 @@ class ExecutionIntegrityTests(unittest.TestCase):
                     'ray_shutdown': True, 'latest_committed_round': 3, 'committed_steps': 3,
                     'failure': {'error_type': 'turn_incomplete'}})
                 return SimpleNamespace(returncode=1)
-            with patch('policy_sim.execution.validate_authorization', return_value=auth), \
+            with patch('policy_sim.budget.open_stage_ledger'), \
+                    patch('policy_sim.execution.validate_authorization', return_value=auth), \
                     patch('policy_sim.execution.authorization_paths', return_value={'control': root / 'control'}):
                 self.assertFalse(execute_stage(root, manifest_path, auth_path, root / 'runs/batch', runner=runner))
             self.assertEqual(len(calls), 1)
@@ -116,6 +229,39 @@ class ExecutionIntegrityTests(unittest.TestCase):
             status = read_json(root / 'runs/batch/batch_status.json')
             self.assertEqual(status['status'], 'paused')
             self.assertEqual(next(iter(status['runs'].values()))['committed_steps'], 3)
+
+    def test_resume_restores_attempt_then_starts_prepared_runs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest_path, auth_path = root / 'manifest.json', root / 'auth.json'
+            manifest = make_manifest(root, 'finite_endpoints')
+            write_json(manifest_path, manifest)
+            auth = {'authorization_id': 'offline', 'max_attempts': len(manifest['runs']), 'manual_resume_allowed': True}
+            write_json(auth_path, auth)
+            control = root / 'control'
+            output = make_paused_batch(root, manifest_path, auth_path, auth, control)
+            launched = []
+            def runner(command, **kwargs):
+                run_id = command[command.index('--run-id') + 1]
+                destination = Path(command[command.index('--output') + 1])
+                row = read_json(output / 'batch_status.json')['runs'][run_id]
+                launched.append((run_id, '--resume' in command, row['committed_steps']))
+                if '--resume' not in command:
+                    record = next(r for r in manifest['runs'] if r['run_id'] == run_id)
+                    make_checkpoint(destination, root, record)
+                write_json(destination / 'controller_receipt.json', {'clean_commit': True, 'ray_shutdown': True,
+                    'pending_requests': 0, 'committed_steps': 1, 'completion_status': {'complete': True}})
+                return SimpleNamespace(returncode=0)
+            with patch('policy_sim.budget.open_stage_ledger'), \
+                    patch('policy_sim.execution.validate_authorization', return_value=auth), \
+                    patch('policy_sim.execution.authorization_paths', return_value={'control': control}), \
+                    patch('policy_sim.protocol.require_baseline'), \
+                    patch('policy_sim.verify.verify_run', return_value={'passed': True, 'workload_complete': True}):
+                self.assertTrue(execute_stage(root, manifest_path, auth_path, output, resume=True, runner=runner))
+            self.assertEqual(launched, [(r['run_id'], i == 0, 1 if i == 0 else 0)
+                                        for i, r in enumerate(manifest['runs'])])
+            self.assertTrue(all(row['status'] == 'complete'
+                                for row in read_json(output / 'batch_status.json')['runs'].values()))
 
     def test_round_zero_snapshot_survives_partial_mutation(self):
         with tempfile.TemporaryDirectory() as directory:

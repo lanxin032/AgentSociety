@@ -7,7 +7,7 @@
 ## 交付入口
 
 - [实验协议](protocol.md)、[任务图/权限/资源口径](mechanism_reference.md)、[冻结参数](frozen_spec.json)、[来源边界](source_boundaries.json)。
-- [运行说明](README.md)、[业务环境](/D:/AgentSociety/policy_mve/core.py)、[官方框架入口](/D:/AgentSociety/tools/run_mve.py)、[独立核验器](/D:/AgentSociety/tools/verify_mve.py)。
+- [运行说明](README.md)、[业务环境](../../runs/official-refactor-20260913/before-source/policy_mve/core.py)、[官方框架入口](../../runs/official-refactor-20260913/before-source/tools/run_mve.py)、[独立核验器](../../runs/official-refactor-20260913/before-source/tools/verify_mve.py)。
 - [可机读结果](implementation_results.json)、[24次清单](batch_run_plan.json)、[批次报价](batch_quote.json)。
 
 ## 验收证据

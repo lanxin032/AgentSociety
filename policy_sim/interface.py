@@ -3,10 +3,10 @@ from copy import deepcopy
 import hashlib
 import json
 
-INTERFACE_VERSION = "v3.3-materials-11"
+INTERFACE_VERSION = "v3.3-materials-13"
 # Kept beside the presentation layer because checkpoints and the independent
 # audit re-derive it without importing the framework-bound runtime.
-RUNTIME_VERSION = "official-policy-5"
+RUNTIME_VERSION = "official-policy-6"
 DERIVED_FIELDS = frozenset({"interface_version", "context_sha256", "candidate_options", "evidence_index"})
 INTERFACE_FIELDS = DERIVED_FIELDS
 

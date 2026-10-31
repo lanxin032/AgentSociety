@@ -1,224 +1,44 @@
-# Policy Mix Cloud Development
+# AgentSociety 政策组合研究
 
-## 当前 policy_sim 执行入口
+当前唯一执行架构为`policy_sim`，复用官方AgentSociety2 **2.8.7**、PersonAgent/ReAct、Agent Skills、TODO、Memory、SimpleSocialSpace、工作区与Ray；业务请求实际执行官方`ReActRouter.ask()`，岗位指南为默认激活的静态Skill，领域结算归`PolicyEnv.step()`。四主体、种子3001、12个初始问题、合法信息、候选行动和ABC政策机制保持；消息交付统一在整轮边界。有限任务无固定轮数终点；费用只记录，未提交轮次记为未办理，技术服务失败暂停。
 
-当前运行基础使用 AgentSociety2 2.8.7 的 PersonAgent、ReAct、Memory、官方邮箱及工作区，执行入口为 `policy_sim`。旧实现和旧测试在本分支保留供追溯；下方旧命令不作为新执行包的入口。
+- [当前研究与验收状态](research/v3_1/README.md)
+- [HTML：当前000与token诊断](research/v3_1/token-diagnosis.html#current-run)
+- [架构和官方适配依据](ARCHITECTURE.md)
+- [按官方 agentic loop 重构的设计与流程图](research/v3_1/native-refactor-design.md)
+- [领域术语与研究边界](CONTEXT.md)
 
-离线检查新执行包：`python -B -m unittest discover -s tests -p 'test_sim_*.py' -v`。
+## 当前命令
 
-`python -m policy_sim prepare --output runs/<new-preflight>` 只生成冻结方案和未批准授权草案；`run`/`resume` 仍要求单独有效授权及原预算账本。提交源码不构成实验授权。
+本机使用Conda `agentsociety`（Python3.12.14）；`environment.yml`引用[requirements.lock](requirements.lock)，精确锁定已验收Mac arm64环境的125个Python包，本轮没有升级或重装。运行前核对包版本，实际Python、平台和包版本写入冻结配置及driver报告，恢复和审计核对环境一致性。其他平台尚未重建验证。当前模型`deepseek-flash`、temperature0.2、max_tokens16384、thinking关闭、上游600秒/客户端660秒。
 
-当前包按有限工作负载运行，每个主体每轮有一次业务行动机会；通过官方 ReAct 工具观察、按需读取、提交候选，再 finish。环境模板指令由 `dispatch_plan` 确定性分发。监控入口为 `tools/monitor_000.py`。
-
-七项离线修复覆盖：未办理及兜底记忆审计回放、在途请求排空期限、恢复证据所有权、初始观察正文、最近八条工具观察对应的读取缓存、重复读取监控，以及按实际 ReAct 迭代计数的节奏提示。当前运行时为 `official-policy-5`、接口 `v3.3-materials-11`、提示 `official-native-16`；旧版冻结配置不能直接续跑。
-
-验证使用离线夹具，不启动真实模型 API 或 Ray；真实 token 降幅尚未测量。
-
-## Local macOS environment
-
-The local Conda environment is `agentsociety` (Python 3.12). `environment.yml`
-pins AgentSociety 2.8.4 and Ray 2.55.1 to the cloud versions recorded below.
-MCP is constrained to 1.x because this framework imports `mcp.server.fastmcp`,
-which is no longer available in MCP 2.x.
-The latest online documentation may describe a newer framework release.
-To recreate the environment on another machine:
+当前研究协议由[policy_sim/protocol.py](policy_sim/protocol.py)生成：固定有限任务，以全任务完成为终点、`T_system`为指标；先验收真实000，再开放其余七组。[旧60轮协议](research/v3_1/design_protocol.json)与[旧八组合模板](research/v3_1/design-8.json)已标为历史不可执行文件，只用于解释旧证据。
 
 ```sh
-conda env create -f environment.yml
-```
-
-On this Mac, load the local configuration before running Python entry points:
-
-```sh
-cd /Users/zy/Desktop/AgentSoiety
 conda activate agentsociety
-set -a
-source .env
-set +a
+python -B -m unittest discover -s tests -v
+python -m policy_sim prepare --output runs/<new-preflight>
+python -m policy_sim run --manifest runs/<new-preflight>/manifest.json --authorization runs/<new-preflight>/authorization.json --output runs/<new-run>
+python -m policy_sim resume --manifest runs/<new-preflight>/manifest.json --authorization runs/<new-preflight>/authorization.json --output runs/<existing-run>
+python -m policy_sim audit runs/<new-run>/<attempt>
 ```
 
-The local `.env` is ignored by Git and has owner-only permissions (0600).
-It configures `https://llmapi.fiblab.net/v1`; the initial model choices follow
-the existing project configuration (`deepseek-v4-flash`, embedding `bge-m3`).
-These model choices and credentials still require live API verification.
-Create your own `.env` when recreating this environment; do not commit keys.
+`prepare`只生成冻结方案和未批准授权草案，不调用API。`run`/`resume`要求明确授权并核对原账本、源码和模型配置；resume是用户明确接续，创建新attempt，保留旧失败证据与费用，不自动重试。实际attempt路径见运行目录的`batch_status.json`。
 
-Offline validation (does not call a paid model):
+生产执行使用现有`.env.deepseek`秘密配置和`runs/api-local-budget.json`，统一通过loopback代理。不要在命令行或报告中粘贴密钥。环境路由的coder和最终summary全部经原计量客户端，统一计入`environment_routing`和`T_system`；官方10次主体ReAct迭代不等于10次API调用；缺提交记未办理；已提交但缺finish保留立案、使用官方兜底记忆，不替模型提交wait；主体可直接finish而不提交，按未办理记录。仅真实000完整完成且独立审计通过后，才开放另外七组；离线轨迹不能替代真实模型行为验证。
+
+监控入口为`python tools/monitor_000.py --preflight runs/<new-preflight> --batch runs/<new-run>`，记录token、完成进度和当前异常。重复读取只作为线索，已完成轮次的历史重复不触发停机。
+
+## 源码、同步和历史证据
+
+当前包、注册薄层、测试和选定研究文档纳入源码；凭据、账本、授权、原始runs和下载证据不纳入Git。新克隆不是运行证据和秘密配置的备份，也不构成收费授权。
 
 ```sh
-python -m pip check
-python tools/check_remote.py
-python -B -m unittest discover -s tests -v
+python tools/build_source_bundle.py --output runs/source-review.zip
 ```
 
-Despite its historical name, `check_remote.py` inspects the Python environment
-where it is run. It replaces credentials with placeholders and blocks Python
-network connections during its import checks. Local environment setup does
-not grant a new experiment budget. Existing paid runners retain their budget,
-authorization and loopback-proxy requirements; `.env` does not replace their
-separate `.env.smoke` configuration or budget ledger.
+此命令生成可核对的源码/同步候选包、导入闭包与逐文件哈希，不执行上传。云端覆盖前仍需比较现状哈希。连接工具`tools/coder.ps1`、`tools/open-cloud.ps1`保留；云端历史地址为`/home/coder/policy-mix`，框架位于`/app/packages/agentsociety2`。本次实现和验证在本机进行，不代表已同步或实测云端。
 
-## Code navigation
+旧MVE/V3/runtime执行实现已由当前包替代，原实验和诊断记录继续保留。[重构前源码指纹](runs/official-refactor-20260913/before-source-manifest.json)、[退役与替代覆盖](runs/official-refactor-20260913/migration.json)、[历史根说明与云端事实](runs/official-refactor-20260913/before-source/README.md)。历史指令仅解释当时版本，不作为当前入口。
 
-Start with [the architecture map](ARCHITECTURE.md) for shared execution and project lifecycle responsibilities, and [the domain glossary](CONTEXT.md) for the research terms.
-
-## GitHub source distribution
-
-This repository contains the canonical source, tests, selected research protocols,
-and the six interface observation fixtures. It excludes local credentials, budget
-ledgers, execution authorizations, raw run outputs, downloaded evidence, and temporary
-files. Historical reports describe earlier local runs; links to excluded evidence
-require the original local archive. A fresh clone is not a backup of cloud secrets
-or budget state and does not authorize paid API execution.
-
-The current implementation is documented in [research/v3_1/README.md](research/v3_1/README.md).
-Offline tests use Python without starting a paid experiment:
-
-```console
-python -B -m unittest discover -s tests -v
-```
-
-当前代码在根目录原地维护，最新修订及验证入口见 [当前实现说明](research/v3_1/README.md)。版本号用于区分输入、状态与证据格式，不另建源码版本目录。
-
-完整政策组合实验V3（组合、强度及顺序）的原始协议与历史执行证据见 [V3说明](research/v3_20260909/README.md)。旧版最小实验保留作基线与共用依赖；离线、框架验证与真实模型阶段分别记录，设计清单不构成阶段执行授权。
-
-供水治理最小实验的协议、版本化代码、验证与接入结果入口见 [MVE说明](research/mve_20260909/README.md)。其中离线脚本矩阵、真实模型接入、定向接口用例与待批准的24次批次分别记录，不视为同类实验。
-
-Connection target: `https://coder.fiblab.net`, workspace
-`lanxinl29-gmail-com/policy-mix`, agent `main`.
-
-- Local source: `D:\AgentSociety`
-- Cloud development directory: `/home/coder/policy-mix`
-- Preinstalled framework: `/app/packages/agentsociety2`
-- Cloud Python: `/usr/local/bin/python`
-
-The PowerShell entry point reuses the existing Coder Remote login. It never
-copies or prints the saved session token. Do not commit credentials or `.env`
-files. Keep changes out of the preinstalled framework unless explicitly needed.
-
-## Commands
-
-Run these from `D:\AgentSociety` in PowerShell:
-
-```powershell
-& .\tools\coder.ps1 list
-& .\tools\coder.ps1 schedule show lanxinl29-gmail-com/policy-mix
-& .\tools\open-cloud.ps1
-& .\tools\coder.ps1 exec python /home/coder/policy-mix/tools/check_remote.py
-```
-
-The diagnostic uses temporary placeholder model settings and disables Python
-network connections during imports. It does not start Ray or a simulation and
-does not test actual model access. Its exit status covers file I/O and core
-imports; inspect `pip_check` separately for preinstalled dependency conflicts.
-
-`open-cloud.ps1` uses the verified remote URI and disables GPU acceleration for
-that launch only. Close an existing VS Code instance first if you need the launch
-option to take effect. This does not edit global preferences.
-
-Use `coder.ps1 exec <command> [arguments]` for remote commands. The helper inserts
-Coder's argument separator itself, because PowerShell consumes a script-level
-`--`. Piped text is forwarded to the remote command's standard input.
-
-## Verified on 2026-09-09
-
-- Coder CLI 2.37.1: authenticated remote commands succeed. The existing Coder
-  Remote extension updated its cached CLI and verified the vendor signature.
-- VS Code 1.136.2: remote server, extension host, SSH tunnel, and the cloud
-  `policy-mix` folder are connected. Earlier attempts hit a TLS connection reset;
-  a fresh launch succeeded. GPU settings are not proven to be the cause.
-- Container limits: 4 CPU cores and 32 GiB RAM, confirmed through cgroup values.
-- Python 3.12.13; AgentSociety distribution metadata 2.8.4; Ray 2.55.1.
-  AgentSociety's module-level `__version__` still says 2.8.3.
-- File upload hashes match local files. Temporary cloud file read/write and
-  offline core imports pass with process-local placeholder configuration.
-- `pip check` reports two pre-existing conflicts: `transformers 5.15.0` requires
-  `huggingface-hub >=1.5.0,<2.0` but 0.36.1 is installed; `pipx 1.16.6` requires
-  `platformdirs >=4.6` but 4.5.1 is installed. No package versions were changed.
-- The noninteractive SSH session does not provide `AGENTSOCIETY_LLM_API_KEY`,
-  `AGENTSOCIETY_LLM_API_BASE`, or `AGENTSOCIETY_LLM_MODEL`. The smoke test reads
-  its authorized key from the cloud-only `.env.smoke` file (mode 0600).
-- Observed stop deadline: 2026-09-10 10:48:25 Asia/Shanghai. Check it again before
-  long tasks; no schedule settings were changed.
-
-## Working Rules
-
-- Compare local and cloud file hashes before replacing existing code. There is
-  no automatic bidirectional sync or overwrite policy.
-- Use the cloud Python for execution. No local WSL or Conda deployment is needed
-  for this connection workflow.
-- Placeholder settings are not usable for experiments. The real smoke test below
-  verifies basic execution, not research validity or all framework features.
-- Check the current stop deadline before long runs. Background execution alone
-  does not prevent Coder from stopping the workspace.
-- Verify persistent-storage behavior before treating cloud-only results as a
-  durable backup. Do not restart the workspace just to test this during work.
-
-## Real AgentSociety Smoke Test
-
-`tools/smoke_driver.py` imports the installed package directly:
-
-```python
-from agentsociety2.society import AgentSociety
-from agentsociety2.env.env_router_actor import get_env_router_actor_class
-```
-
-It uses the official `PersonAgent`, `SimpleSocialSpace`, `AgentSociety.init()`,
-`run(num_steps=1, tick=60)`, `ask()`, checkpoint, and replay implementations.
-The environment runs in the package's Ray actor. No simulation engine was
-reimplemented and no files under `/app/packages/agentsociety2` were modified.
-The `AuditedSociety` subclass checks returned per-agent task results, because a
-successful society time step alone does not prove every agent task succeeded.
-
-Reference: [AgentSociety quickstart](https://agentsociety2.readthedocs.io/zh-cn/latest/quickstart.html).
-
-### Results on 2026-09-09
-
-- Real API probe returned `CLOUD_SMOKE_OK` using the platform's
-  `https://llmapi.fiblab.net/v1` endpoint and `deepseek-v4-flash` model.
-- Two official `PersonAgent` instances completed one step and returned nonempty
-  readiness messages. The society advanced from 09:00 to 09:01.
-- `SOCIETY.json`, `SOCIETY_STEP.json`, both agent checkpoints, the environment
-  checkpoint, trace files, and replay JSONL records were saved.
-- A separate query-only run restored the environment checkpoint without
-  advancing the simulation. Both Ray sessions shut down afterward.
-- The full combined test is **not a pass**: the original participant-name query
-  exceeded the environment's exposed interface. `SimpleSocialSpace` exposes
-  messaging/group tools, not a participant-profile listing tool. One attempt
-  returned an empty-mailbox result; a later generated query was rejected for
-  `import sys` by the package's safety checks. Those checks remain enabled.
-- The source now asks for the simulation time through the helper's supported
-  `get_current_time` tool. This correction has **not been re-tested with the
-  real API**, because the authorized request allowance was exhausted.
-- Initial code generation was truncated by a 1024-token output limit. A later
-  attempt to disable reasoning returned HTTP 400 from the platform gateway.
-  The final proxy uses the accepted request format and a 4096-token output cap.
-- Total: 16 upstream requests, 15 HTTP 200 responses and one HTTP 400 response;
-  22,088 reported input tokens and 25,549 reported output tokens. Displayed-price
-  estimate: RMB 0.0878232 for reported usage. Conservative accounting including
-  the unknown-usage HTTP 400 reservation: RMB 0.0943152. This is not a reconciled
-  account bill.
-
-The source run is `runs/smoke-20260909T040226.147544Z`; the supplemental query run
-is `runs/smoke-20260909T041151.571299Z`. Earlier failures are retained separately.
-`runs/verification-20260909.json` distinguishes core success from query failure.
-
-### Test Commands
-
-```powershell
-& .\tools\coder.ps1 exec python -m unittest discover -s /home/coder/policy-mix/tests -v
-& .\tools\coder.ps1 exec python /home/coder/policy-mix/tools/run_smoke.py
-& .\tools\coder.ps1 exec python /home/coder/policy-mix/tools/run_smoke.py --resume-query /home/coder/policy-mix/runs/smoke-20260909T040226.147544Z/simulation
-```
-
-Do not run the paid commands again without a new allowance. The persistent
-`runs/api-smoke-budget-20260909.json` ledger has reached its 16-request cap and
-will block further upstream requests. It also enforces a conservative estimated
-RMB 0.50 total cap, a single model, and single-choice non-streaming responses.
-Do not delete the ledger to bypass the cap or start concurrent test controllers.
-The cap is a test safeguard based on displayed prices, not a provider billing cap.
-
-`tools/run_smoke.py` owns the real key and forwards requests through a loopback
-proxy. Ray workers receive only a dummy loopback key. `.env.smoke` is excluded
-from source control and result downloads. `tools/verify_smoke.py` validates the
-saved evidence without imports of AgentSociety, network access, or API charges.
+研究历史：[MVE](research/mve_20260909/README.md)、[政策组合V3](research/v3_20260909/README.md)、[当前研究及历史运行记录](research/v3_1/README.md)。模拟结果只说明合成条件下的行为，不直接证明现实政策因果效果。

@@ -8,8 +8,10 @@ from copy import deepcopy
 PROMPT_CORRECTIONS = (
     ("(use an empty list only when nothing notable happened).",
      "(always provide 1 to 8 memories; for an uneventful step record one brief observation)."),
+    ("   - execute_skill_script: run a skill's Python script.",
+     "   - Policy role skills provide guidance only; skill scripts are unavailable."),
     ('- Do not use ask_env to "wait", "wait 30 minutes", or create waiting/status events; simulation time advances automatically between steps. To continue an ongoing activity, finish the step or query the current event.',
-     '- Simulation time advances between steps. In this policy task, wait is a valid business candidate: explicitly submit its candidate_id through ask_env, then finish after the queued receipt. Do not request an artificial time delay.'),
+     '- Simulation time advances between steps. In this policy task, wait is a valid business candidate: explicitly submit its candidate_id through ask_env. Do not request an artificial time delay.'),
 )
 
 

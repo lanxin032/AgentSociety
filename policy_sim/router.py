@@ -1,5 +1,6 @@
 """Official structured-tool router with one trusted policy session."""
 import asyncio
+import json
 from contextvars import ContextVar
 from copy import deepcopy
 from datetime import timedelta
@@ -10,26 +11,23 @@ from jsonschema.exceptions import ValidationError
 from agentsociety2.env import EnvBase, tool
 from agentsociety2.env.router_react import ReActRouter
 from .core import PolicyWorld
-from .interface import RUNTIME_VERSION, canonical, decorate_observation, decode_candidate_choice, decode_material_read, dispatch_plan
+from .interface import RUNTIME_VERSION, canonical, decorate_observation, decode_candidate_choice, decode_material_read
 from .materials import MATERIAL_VERSION
 from .llm import validate_action
 from .io import append_jsonl, digest, read_json, write_json
 from .services import PolicyServices
-from .work import WorkContext, business_material_result, _size, paced as _paced_result
+from .work import WorkContext, business_material_result, _size
 from .messaging import PolicyMailbox
+from .prompt import WORLD_DESCRIPTION
 
 ACTOR_IDS = {1, 2, 3, 4}
 _TRUSTED = ContextVar("policy_business_request", default=None)
 
 
 class PolicyEnv(EnvBase):
-    def __init__(self, owner):
+    def __init__(self, owner, world):
         super().__init__()
-        self.owner = owner
-
-    @property
-    def world(self):
-        return self.owner.world
+        self.owner, self.world = owner, world
 
     @classmethod
     def mcp_description(cls):
@@ -47,7 +45,7 @@ class PolicyEnv(EnvBase):
 
     @tool(readonly=True)
     async def read_work(self, section: str, offset: int = 0) -> dict:
-        """Read legal work records: candidate_options, visible_tickets, projects, topics, inbox, sent_messages, public_rules, source_catalog, analyses, last_receipt or resources. Use next_offset to continue. No workspace paths."""
+        """Read legal work records: candidate_options, visible_tickets, projects, topics, inbox, sent_messages, public_rules, source_catalog, analyses, last_receipt or resources. Follow returned read_work references for project tasks and records. Use next_offset to continue. No workspace paths."""
         return await self.owner._execute("read_work", {"section": section, "offset": offset})
 
     @tool(readonly=False)
@@ -63,11 +61,36 @@ class PolicyEnv(EnvBase):
         await self.owner.mailbox.init(start_datetime)
 
     async def step(self, tick, t):
-        # Barrier semantics live in PolicyRouter.step; the env module just
-        # advances the world and delivers due mail for the settled round.
-        self.world.advance()
-        self.t = t + timedelta(seconds=tick)
-        await self.owner.mailbox.deliver(self.world, self.t)
+        owner = self.owner
+        owner._healthy()
+        if ACTOR_IDS - owner.completed - owner.unfiled:
+            raise RuntimeError("Every actor must persist successfully before settlement")
+        before, before_time = self.world.export_state(), self.t
+        try:
+            self.world.advance()
+            self.t = t + timedelta(seconds=tick)
+            await owner.mailbox.deliver(self.world, self.t)
+            rows = []
+            for actor in sorted(ACTOR_IDS):
+                settled = self.world._latest_receipt(actor)
+                if settled is None or settled["round"] != before["round"]:
+                    raise RuntimeError("Missing authoritative settlement")
+                row = {"actor_id": actor, "submission_id": owner.receipts[actor]["submission_id"]
+                       if actor in owner.receipts else None, **settled}
+                append_jsonl(owner.run_dir / "native_settlements.jsonl", row)
+                rows.append(row)
+            snapshot = self.world.export_state()
+            append_jsonl(owner.run_dir / "rounds.jsonl", {"round": self.world.round,
+                "state_sha256": digest(snapshot), "metrics": self.world.metrics()})
+            owner.settlements.extend(rows)
+            owner.last_snapshot = snapshot
+            owner.completed.clear(); owner.unfiled.clear(); owner.receipts.clear(); owner.observed.clear()
+            owner._saved_round = None
+        except Exception as exc:
+            owner.world = PolicyWorld.from_state(before)
+            self.t = before_time
+            owner.fatal_error = exc
+            raise
 
     async def to_workspace(self, workspace_path=None):
         if workspace_path is not None:
@@ -94,11 +117,11 @@ class PolicyEnv(EnvBase):
 class PolicyRouter(PolicyServices, ReActRouter):
     def __init__(self, run_dir, policy, seed, horizon, decision_mode, llm_client,
                  config=None, scenario=None, workload_mode=None):
-        self.world = PolicyWorld(policy=policy, seed=seed, horizon=horizon, config=config,
+        world = PolicyWorld(policy=policy, seed=seed, horizon=horizon, config=config,
             scenario=scenario, workload_mode=workload_mode or (scenario or {}).get("workload_mode", "finite"))
-        self.mailbox = PolicyMailbox(self.world)
-        self.env = PolicyEnv(self)
-        super().__init__([self.env], max_steps=1, max_llm_call_retry=1)
+        self.env = PolicyEnv(self, world)
+        self.mailbox = PolicyMailbox(world)
+        super().__init__([self.env], max_steps=10, max_llm_call_retry=1)
         self.run_dir = Path(run_dir)
         self.env_path = self.run_dir / "env/PolicyEnv"
         self.env._bind_workspace(self.env_path)
@@ -108,9 +131,18 @@ class PolicyRouter(PolicyServices, ReActRouter):
         self.receipts, self.advice_cache, self.settlements = {}, {}, []
         self.fatal_error = None
         self.last_snapshot = None
+        self._saved_round = None
         self._ask_lock = asyncio.Lock()
         routes = self.run_dir / "native_routes.jsonl"
         self._route_ordinal = len(routes.read_text().splitlines()) if routes.exists() else 0
+
+    @property
+    def world(self):
+        return self.env.world
+
+    @world.setter
+    def world(self, value):
+        self.env.world = value
 
     @property
     def submitted(self):
@@ -140,46 +172,36 @@ class PolicyRouter(PolicyServices, ReActRouter):
                 raise ValueError("Conflicting caller identity")
             if type(ctx.get("round")) is not int or ctx["round"] != self.world.round or type(readonly) is not bool:
                 raise ValueError("Stale trusted round or invalid readonly")
-            if instruction == "complete" and ctx.get("lifecycle_complete") is True:
-                if actor not in self.submitted or actor in self.completed:
-                    raise ValueError("Completion requires exactly one prior submission")
-                self.completed.add(actor)
-                return {"receipt": deepcopy(self.receipts[actor])}, canonical(self.receipts[actor])
-            if instruction == "abandon" and ctx.get("lifecycle_unfiled") is True:
-                if actor in self.completed or actor in self.unfiled or actor in self.submitted:
-                    raise ValueError("Abandon requires an unfinished round")
-                from .failure import unfiled_receipt
-                self.unfiled.add(actor)
-                receipt = unfiled_receipt(actor, self.world.round)
-                return {"receipt": deepcopy(receipt)}, canonical(receipt)
             ask_id = ctx["ask_id"]
             UUID(ask_id)
             trusted = {"actor": actor, "readonly": readonly, "ask_id": ask_id,
                 "actor_call_index": ctx.get("actor_call_index", -1), "call_index": 0,
                 "actor_turn": ctx.get("actor_turn", 0), "visible_asks": list(ctx.get("visible_asks", [])),
-                "receipts": [], "instruction": instruction, "variables": deepcopy(ctx.get("variables", {}))}
+                "receipts": [], "instruction": instruction, "variables": deepcopy(ctx.get("variables", {})),
+                "router_calls": 0, "router_call_index": None}
             token = _TRUSTED.set(trusted)
             try:
                 if instruction == "<observe>":
                     if not readonly:
                         raise ValueError("Initial observation is readonly")
-                    value = await self.env.observe()
+                    try:
+                        value = await self.env.observe()
+                    except Exception as exc:
+                        self.fatal_error = exc
+                        raise
                     return {"observation": deepcopy(self.observed[actor].observation)}, canonical(value)
                 if actor not in self.observed:
                     raise ValueError("Business request requires initial observation")
-                # The actor's structured template is the business decision itself.
-                # Dispatch it deterministically: a routing model may not re-decide,
-                # re-verify against rules/materials, or drop the requested operation.
+                routing_ctx = {"actor_id": actor, "round": self.world.round,
+                               "variables": deepcopy(trusted["variables"])}
                 try:
-                    tool_name, args = dispatch_plan(instruction, trusted["variables"])
-                except ValueError as exc:
-                    return self._ask_answer(ask_id, actor, trusted, error=str(exc))
-                try:
-                    await self._execute_tool(tool_name, args, readonly)
-                except (ValueError, ValidationError):
-                    # Agent-correctable business rejection: the failed receipt
-                    # already carries the exact error for the actor's next call.
-                    return self._ask_answer(ask_id, actor, trusted)
+                    await super().ask(routing_ctx, instruction, readonly=readonly,
+                        template_mode=template_mode, trace_id=trace_id, parent_span_id=parent_span_id)
+                except Exception:
+                    # Preserve a metered failure swallowed by the router's formatter.
+                    self._healthy()
+                    raise
+                self._healthy()
                 return self._ask_answer(ask_id, actor, trusted)
             finally:
                 _TRUSTED.reset(token)
@@ -187,8 +209,8 @@ class PolicyRouter(PolicyServices, ReActRouter):
     def _ask_answer(self, ask_id, actor, trusted, error=None):
         answer = {"status": "success" if trusted["receipts"] and all(r["ok"] for r in trusted["receipts"]) else "fail",
                   "receipts": trusted["receipts"]}
-        if error and not trusted["receipts"]:
-            answer["error"] = error
+        if not trusted["receipts"]:
+            answer["error"] = error or "No environment tool executed"
         return {"ask_id": ask_id, "receipts": deepcopy(trusted["receipts"]),
             "observation": deepcopy(self.observed[actor].observation)}, canonical(answer)
 
@@ -200,28 +222,39 @@ class PolicyRouter(PolicyServices, ReActRouter):
             "actor_id": trusted["actor"], "ask_id": trusted["ask_id"],
             "actor_turn": trusted["actor_turn"], "visible_asks": trusted['visible_asks'],
             "actor_call_index": trusted["actor_call_index"], "ordinal": self._route_ordinal,
-            "operation": tool_name, "payload": deepcopy(args), "routing": "deterministic_template_dispatch"}
+            "operation": tool_name, "payload": deepcopy(args), "routing": "official_react",
+            "router_call_index": trusted["router_call_index"]}
         self._route_ordinal += 1
         try:
-            schema = next(x["function"]["parameters"] for x in self._all_tools if x["function"]["name"] == tool_name)
+            schema = next((x["function"]["parameters"] for x in self._all_tools
+                           if x["function"]["name"] == tool_name), None)
+            if schema is None:
+                raise ValueError("Unknown environment tool: " + str(tool_name))
             validate_schema(args, schema)
             result = await super()._execute_tool(tool_name, args, readonly)
             row.update(ok=True, result=result)
             return result
         except Exception as exc:
             row.update(ok=False, result={"error": str(exc)})
+            if not isinstance(exc, (ValueError, ValidationError)):
+                self.fatal_error = exc
             raise
         finally:
             trusted["receipts"].append({k: row[k] for k in ("operation", "payload", "result", "ok")})
-            append_jsonl(self.run_dir / "native_routes.jsonl", row)
+            try:
+                append_jsonl(self.run_dir / "native_routes.jsonl", row)
+            except Exception as exc:
+                # The official router catches tool errors and keeps reasoning.
+                self.fatal_error = exc
+                raise
 
     async def _execute(self, operation, payload):
         trusted = _TRUSTED.get()
         if trusted is None:
             raise RuntimeError("Tool lacks trusted actor context")
         actor = trusted["actor"]
-        if actor in self.submitted:
-            raise ValueError("Already queued this round; finish and inspect the next round's settlement")
+        if operation == "submit" and actor in self.submitted:
+            raise ValueError("Already queued this round; at most one business submission is allowed")
         if operation == "observe":
             if actor not in self.observed:
                 obs = deepcopy(self.world.observe(actor))
@@ -236,7 +269,7 @@ class PolicyRouter(PolicyServices, ReActRouter):
         if operation == "read_work":
             result = self.observed[actor].read_work_once(payload["section"], payload.get("offset", 0),
                 ask_id=trusted['ask_id'], visible_asks=trusted['visible_asks'])
-            return _paced_result(trusted['actor_turn'] - 1, result)
+            return result
         if operation == "read_materials":
             session = self.observed[actor]
             obs = session.observation
@@ -245,8 +278,7 @@ class PolicyRouter(PolicyServices, ReActRouter):
                 # Identical re-read within the round: nothing new is served,
                 # the read quota is not charged again and no state moves.
                 from .work import material_stub
-                return _paced_result(trusted['actor_turn'] - 1,
-                                     material_stub(ids, session.material_repeat_count(ids)))
+                return material_stub(ids, session.material_repeat_count(ids))
             from .materials import lawful_sources
             sources = lawful_sources(self.world, actor)
             if len(ids) > 4 or _size(business_material_result({"sources": [sources[sid] for sid in ids]})) > 10000:
@@ -259,7 +291,7 @@ class PolicyRouter(PolicyServices, ReActRouter):
                 "before_context_sha256": obs["context_sha256"], "result": result,
                 "after_context_sha256": session.observation["context_sha256"]})
             self.world.bind_material_context(actor, session.observation)
-            return _paced_result(trusted['actor_turn'] - 1, business_material_result(result))
+            return business_material_result(result)
         if operation != "submit" or trusted["readonly"]:
             raise ValueError("Mutation not authorized")
         action = validate_action(decode_candidate_choice(payload, self.observed[actor].observation), self.observed[actor].observation)
@@ -273,51 +305,105 @@ class PolicyRouter(PolicyServices, ReActRouter):
             "action": action, "receipt": receipt, "submission_id": receipt["submission_id"]})
         return {"action": action, "receipt": receipt}
 
-    async def acompletion(self, model, messages, **kwargs):
-        # Business asks dispatch deterministically from their recorded template;
-        # any model call here would be unmetered re-decision of an actor's
-        # already-made choice, so it is refused rather than silently billed.
-        raise RuntimeError("Business environment routing must not invoke a model")
+    def _scripted_response(self, model, messages, **kwargs):
+        """Offline model fixture; the installed router still executes its full loop."""
+        from litellm import ModelResponse
+        from .agent import tool_response
+        if model == "coder" and kwargs.get("tools"):
+            from .interface import dispatch_plan
+            trusted = _TRUSTED.get()
+            try:
+                name, payload = dispatch_plan(trusted["instruction"], trusted["variables"])
+            except ValueError:
+                return ModelResponse(choices=[{"finish_reason": "stop", "message": {
+                    "role": "assistant", "content": "Unsupported environment request."}}])
+            return tool_response(name, payload)
+        content = canonical({"status": "success", "summary": "Recorded tool results."})
+        return ModelResponse(choices=[{"finish_reason": "stop", "message": {
+            "role": "assistant", "content": content}}])
 
-    async def step(self, tick, t):
+    async def acompletion(self, model, messages, **kwargs):
         self._healthy()
-        if ACTOR_IDS - self.completed - self.unfiled:
-            raise RuntimeError("Every actor must finish or settle unfiled before settlement")
-        before = self.world.export_state()
-        before_time, before_env_time = self.t, self.env.t
+        trusted = _TRUSTED.get()
+        if trusted is None or model not in {"coder", "summary"}:
+            raise RuntimeError("Routing model lacks trusted request context")
+        if kwargs.pop("stream", False):
+            raise ValueError("Streaming routing responses are unsupported")
+        # These control the official formatter's retries, never transport retries.
+        for name in ("max_retries", "base_delay", "max_delay"):
+            kwargs.pop(name, None)
+        index = trusted["router_calls"]
+        trusted["router_calls"] += 1
+        trusted["router_call_index"] = index
+        row = {"runtime_version": RUNTIME_VERSION, "round": self.world.round,
+            "actor_id": trusted["actor"], "ask_id": trusted["ask_id"],
+            "router_call_index": index, "model_role": model,
+            "request_options": deepcopy(kwargs)}
         try:
-            await super().step(tick, t)
-            rows = []
-            for actor in sorted(ACTOR_IDS):
-                settled = self.world._latest_receipt(actor)
-                if settled is None or settled["round"] != before["round"]:
-                    raise RuntimeError("Missing authoritative settlement")
-                row = {"actor_id": actor, "submission_id": self.receipts[actor]["submission_id"] if actor in self.receipts else None, **settled}
-                append_jsonl(self.run_dir / "native_settlements.jsonl", row)
-                rows.append(row)
-            snapshot = self.world.export_state()
-            append_jsonl(self.run_dir / "rounds.jsonl", {"round": self.world.round,
-                "state_sha256": digest(snapshot), "metrics": self.world.metrics()})
-            self.settlements.extend(rows)
-            self.last_snapshot = snapshot
-            self.completed.clear(); self.unfiled.clear(); self.receipts.clear(); self.observed.clear()
+            if self.decision_mode == "scripted":
+                response = self._scripted_response(model, messages, **kwargs)
+            else:
+                if self.llm_client is None:
+                    raise RuntimeError("Routing model requires the metered client")
+                context = {"purpose": "environment_routing", "run_id": self._identity(),
+                    "attempt_id": str(self.run_dir.resolve()), "round": self.world.round,
+                    "actor_id": trusted["actor"], "ask_id": trusted["ask_id"], "substep": index}
+                response = await self.llm_client.call(model=self.llm_client.model_name,
+                    messages=messages, audit_context=context, **kwargs)
+            request_id = getattr(response, "request_id", None)
+            row.update(request_id=request_id, offline=request_id is None)
+            if request_id is None:
+                row.update(messages=deepcopy(messages), response=response.model_dump(mode="json"))
+            append_jsonl(self.run_dir / "native_router_decisions.jsonl", row)
+            if (len(response.choices) != 1
+                    or response.choices[0].finish_reason not in {"stop", "tool_calls"}):
+                raise ValueError("Incomplete routing response; no tools executed")
+            return response
         except Exception as exc:
-            self.world = PolicyWorld.from_state(before)
-            self.t, self.env.t = before_time, before_env_time
             self.fatal_error = exc
             raise
+
+    def owner_actor_results(self, results):
+        """Accept only successful official task results after workspace persistence."""
+        self._healthy()
+        for item in results:
+            if not isinstance(item, dict) or item.get("ok") is not True:
+                raise RuntimeError("Official agent task did not persist successfully")
+            result = json.loads(item.get("summary") or "null")
+            if not isinstance(result, dict):
+                raise RuntimeError("Missing actor completion receipt")
+            actor = result.get("actor_id")
+            if (type(actor) is not int or actor not in ACTOR_IDS
+                    or str(item.get("id")) != str(actor)
+                    or result.get("runtime_version") != RUNTIME_VERSION
+                    or type(result.get("round")) is not int or result["round"] != self.world.round
+                    or result.get("step_completed") is not True
+                    or actor in self.completed or actor in self.unfiled):
+                raise RuntimeError("Invalid, stale or duplicate official actor result")
+            submitted = actor in self.submitted
+            if (result.get("submitted") is not submitted or result.get("unfiled") is not (not submitted)
+                    or submitted and (result.get("receipt") != self.receipts[actor]
+                                      or result.get("action") != self.world.pending[str(actor)]["action"])):
+                raise RuntimeError("Actor result differs from the authoritative submission")
+            (self.completed if submitted else self.unfiled).add(actor)
+        return True
 
     async def to_workspaces(self):
         self._healthy()
         if self.submitted or self.completed or self.unfiled or self.observed or self.receipts:
             raise RuntimeError("Checkpoint requires a clean settled round")
-        await self.env.to_workspace()
-        write_json(self.env_path / "router.json", {"runtime_version": RUNTIME_VERSION,
-            "material_version": MATERIAL_VERSION, "route_ordinal": self._route_ordinal, "run_id": self._identity(), "round": self.world.round,
-            "world_sha256": digest(self.world.export_state()), "advice_cache": self.advice_cache,
-            "settlements": self.settlements, "submitted": [], "completed": [], "unfiled": [], "receipts": {}})
-        write_json(self.run_dir / "world.json", self.world.export_state())
-        write_json(self.run_dir / "metrics.json", self.world.metrics())
+        try:
+            await self.env.to_workspace()
+            write_json(self.env_path / "router.json", {"runtime_version": RUNTIME_VERSION,
+                "material_version": MATERIAL_VERSION, "route_ordinal": self._route_ordinal, "run_id": self._identity(), "round": self.world.round,
+                "world_sha256": digest(self.world.export_state()), "advice_cache": self.advice_cache,
+                "settlements": self.settlements, "submitted": [], "completed": [], "unfiled": [], "receipts": {}})
+            write_json(self.run_dir / "world.json", self.world.export_state())
+            write_json(self.run_dir / "metrics.json", self.world.metrics())
+            self._saved_round = self.world.round
+        except Exception as exc:
+            self.fatal_error = exc
+            raise
 
     async def from_workspaces(self):
         self._healthy()
@@ -339,13 +425,22 @@ class PolicyRouter(PolicyServices, ReActRouter):
             raise RuntimeError("World/checkpoint mismatch")
         self.advice_cache, self.settlements = data["advice_cache"], data["settlements"]
         self._route_ordinal = data["route_ordinal"]
+        self._saved_round = self.world.round
         return True
 
+    def owner_checkpoint_status(self):
+        self._healthy()
+        if self._saved_round != self.world.round:
+            raise RuntimeError("Environment checkpoint was not saved for this round")
+        return {"round": self._saved_round}
+
     def get_token_usages(self):
+        if self.llm_client is not None and hasattr(self.llm_client, "snapshot_token_stats"):
+            return self.llm_client.snapshot_token_stats()
         return {}
 
     async def get_world_description(self):
-        return "政务事项办理、跨岗位交接与公共问题治理；只依据本岗位合法收到的信息行动。"
+        return WORLD_DESCRIPTION
 
     def owner_snapshot(self):
         return self.world.export_state()

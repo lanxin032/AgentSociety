@@ -51,7 +51,7 @@ class InformationContractTests(unittest.TestCase):
 
 
 class OfficialInformationTests(unittest.IsolatedAsyncioTestCase):
-    async def test_pacing_counts_react_turns_instead_of_schema_repair_requests(self):
+    async def test_react_turns_count_separately_from_schema_repair_requests(self):
         fixture = framework.FrameworkTests('test_official_lifecycle_four_finished_barrier_and_restore')
         await fixture.asyncSetUp()
         self.addCleanup(fixture.tmp.cleanup)
@@ -71,8 +71,9 @@ class OfficialInformationTests(unittest.IsolatedAsyncioTestCase):
         await actor.step(1, fixture.now)
         reads = [r for r in framework.rows(fixture.root / 'native_routes.jsonl') if r['operation'] == 'read_work']
         self.assertEqual(len(reads), 6)
-        self.assertTrue(all('pace_note' not in r['result'] for r in reads[:5]))
-        self.assertIn('第6次ReAct迭代', reads[5]['result']['pace_note'])
+        self.assertTrue(all('pace_note' not in r['result'] for r in reads))
+        self.assertEqual([r['actor_turn'] for r in reads], list(range(1, 7)))
+        self.assertEqual([r['actor_call_index'] for r in reads], list(range(1, 12, 2)))
 
     async def test_evicted_page_is_served_again_after_a_batch_of_eight_tool_results(self):
         for operation in ('read_work', 'read_materials'):
@@ -119,6 +120,7 @@ class OfficialInformationTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(routes[0]['result'][field], routes[1]['result'][field])
         for other in fixture.actors[1:]:
             await other.step(1, fixture.now)
+        await fixture.accept_results()
         await fixture.router.step(1, fixture.now)
         from policy_sim.audit import audit_turns
         decisions = [r for p in (fixture.root / 'agents').rglob('native_decisions.jsonl') for r in framework.rows(p)]
@@ -126,7 +128,8 @@ class OfficialInformationTests(unittest.IsolatedAsyncioTestCase):
         summaries, _ = audit_turns(decisions, framework.rows(fixture.root / 'observations.jsonl'),
             framework.rows(fixture.root / 'actions.jsonl'), framework.rows(fixture.root / 'material_reads.jsonl'),
             fixture.router.world.export_state(), tool_receipts=receipts,
-            environment_routes=framework.rows(fixture.root / 'native_routes.jsonl'))
+            environment_routes=framework.rows(fixture.root / 'native_routes.jsonl'),
+            environment_decisions=framework.rows(fixture.root / 'native_router_decisions.jsonl'))
         self.assertEqual(len(summaries), 4)
 
     async def test_first_official_prompt_already_contains_executable_candidates(self):
@@ -184,6 +187,7 @@ class OfficialInformationTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(second.get('read_count_this_turn'), 2)
         for other in fixture.actors[1:]:
             await other.step(1, fixture.now)
+        await fixture.accept_results()
         await router.step(1, fixture.now)
         from policy_sim.audit import audit_turns
         all_decisions = [r for p in (fixture.root / 'agents').rglob('native_decisions.jsonl') for r in framework.rows(p)]
@@ -191,24 +195,19 @@ class OfficialInformationTests(unittest.IsolatedAsyncioTestCase):
         summaries, routes = audit_turns(all_decisions, framework.rows(fixture.root / 'observations.jsonl'),
             framework.rows(fixture.root / 'actions.jsonl'), framework.rows(fixture.root / 'material_reads.jsonl'),
             router.world.export_state(), tool_receipts=receipts,
-            environment_routes=framework.rows(fixture.root / 'native_routes.jsonl'))
+            environment_routes=framework.rows(fixture.root / 'native_routes.jsonl'),
+            environment_decisions=framework.rows(fixture.root / 'native_router_decisions.jsonl'))
         self.assertEqual(len(summaries), 4)
         stubbed = [r for r in routes if r['operation'] == 'read_work' and r['actor_id'] == 1]
         self.assertEqual(len(stubbed), 2)
         self.assertIn('unchanged_since_last_read', json.dumps(stubbed[1]['result']))
 
-    async def test_actor_asks_dispatch_deterministically_without_actor_files(self):
+    async def test_actor_asks_use_native_routing_without_actor_files(self):
         fixture = framework.FrameworkTests('test_official_lifecycle_four_finished_barrier_and_restore')
         await fixture.asyncSetUp()
         self.addCleanup(fixture.tmp.cleanup)
         self.addCleanup(fixture.no_network.stop)
         router, actor = fixture.router, fixture.actors[0]
-        router.decision_mode = 'llm'
-        # Any model invocation from the environment side is a hard failure:
-        # business asks dispatch from their recorded template alone.
-        async def forbidden(**kwargs):
-            raise AssertionError('Environment routing must not call a model')
-        router.llm_client = SimpleNamespace(for_context=lambda *a, **k: SimpleNamespace(call=forbidden))
         original, calls = actor._client.call, []
         async def reply(**kwargs):
             calls.append(kwargs.get('tools') is not None)
@@ -225,15 +224,15 @@ class OfficialInformationTests(unittest.IsolatedAsyncioTestCase):
             return await original(**kwargs)
         actor._client.call = reply
         await actor.step(1, fixture.now)
-        self.assertFalse((fixture.root / 'native_router_decisions.jsonl').exists())
+        self.assertTrue((fixture.root / 'native_router_decisions.jsonl').exists())
         routes = framework.rows(fixture.root / 'native_routes.jsonl')
         self.assertEqual([r['operation'] for r in routes], ['read_work', 'submit'])
         self.assertTrue(all(r['ok'] for r in routes))
-        self.assertEqual(router.completed, {1})
+        self.assertFalse(router.completed)
         decisions = framework.rows(actor.workspace_root_path() / 'native_decisions.jsonl')
         first, last = (_prompt_blocks(row['messages']) for row in (decisions[0], decisions[-1]))
-        self.assertEqual(first['agent']['current_work']['phase'], 'choose')
-        self.assertEqual(last['agent']['current_work']['phase'], 'finish')
+        self.assertNotIn('phase', first['agent']['current_work'])
+        self.assertNotIn('phase', last['agent']['current_work'])
         self.assertEqual(last['agent']['current_work']['queued_receipt']['status'], 'queued')
         history = [{'turn': n, 'action': 'read', 'ok': True, 'observation': f'old-record-{n}'}
                    for n in range(1, 13)]
@@ -248,6 +247,7 @@ class OfficialInformationTests(unittest.IsolatedAsyncioTestCase):
             adapt_official_messages(messages)  # version drift/double application
         for other in fixture.actors[1:]:
             await other.step(1, fixture.now)
+        await fixture.accept_results()
         await router.step(1, fixture.now)
         from policy_sim.audit import audit_turns
         all_decisions = [r for p in (fixture.root / 'agents').rglob('native_decisions.jsonl')
@@ -257,7 +257,8 @@ class OfficialInformationTests(unittest.IsolatedAsyncioTestCase):
         def audit(routes):
             return audit_turns(all_decisions, framework.rows(fixture.root / 'observations.jsonl'),
                 framework.rows(fixture.root / 'actions.jsonl'), framework.rows(fixture.root / 'material_reads.jsonl'),
-                router.world.export_state(), tool_receipts=receipts, environment_routes=routes)
+                router.world.export_state(), tool_receipts=receipts, environment_routes=routes,
+                environment_decisions=framework.rows(fixture.root / 'native_router_decisions.jsonl'))
         routes = framework.rows(fixture.root / 'native_routes.jsonl')
         self.assertEqual(len(audit(routes)[0]), 4)
         routes[1]['result'] = {'value': 'fabricated candidates'}

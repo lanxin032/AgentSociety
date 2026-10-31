@@ -3,6 +3,7 @@
 No network or model calls. Only observe() is a model-facing information boundary.
 Snapshots and audit events contain privileged physical state and must stay private.
 """
+from collections import deque
 from copy import deepcopy
 import hashlib
 import json
@@ -82,6 +83,7 @@ class PolicyWorld:
         (self.opportunities, self.topic_episodes, self.topic_terminal) = ({}, {}, {})
         (self.service_dirty, self.service_last_attempt) = ({}, {})
         self.material_contexts = {}
+        self._rebuild_indices()
         self.initial_ids = []
         self.labor = {}
         self.capital = None
@@ -146,9 +148,62 @@ class PolicyWorld:
     def _q(self, tool):
         return self.scenario['q'][tool]
 
+    def _rebuild_indices(self):
+        self._indices = {'records': {}, 'tasks': {}, 'ticket_received': {},
+                         'record_received': {}, 'pending_messages': deque()}
+        for actor in ACTORS:
+            for kind in ('records', 'tasks'):
+                for key, row in self.knowledge[str(actor)][kind].items():
+                    self._indices[kind].setdefault((actor, row['object']), []).append(key)
+        for event in self.events:
+            self._index_ticket_grant(event)
+        for mid, message in self.messages.items():
+            if message['delivered_round'] is None:
+                self._indices['pending_messages'].append(mid)
+            else:
+                self._index_record_delivery(message)
+
+    def _index_ticket_grant(self, event):
+        if event['kind'] == 'routed':
+            key = (event['department'], event['ticket'])
+        elif event['kind'] == 'message_delivered':
+            key = (event['recipient'], event['object'])
+        else:
+            return
+        received = self._indices['ticket_received']
+        received[key] = min(received.get(key, event['round']), event['round'])
+
+    def _index_record_delivery(self, message):
+        received = self._indices['record_received']
+        for record in message.get('payload', {}).get('records', []):
+            key = (message['recipient'], record.get('id'))
+            received[key] = min(received.get(key, message['delivered_round']), message['delivered_round'])
+
+    def _remember(self, actor, kind, key, row):
+        rows = self.knowledge[str(actor)][kind]
+        previous = rows.get(key)
+        rows[key] = deepcopy(row)
+        index = self._indices[kind]
+        if previous is None:
+            index.setdefault((actor, row['object']), []).append(key)
+        elif previous['object'] != row['object']:
+            for index_key in [index_key for index_key in index if index_key[0] == actor]:
+                del index[index_key]
+            for row_key, saved in rows.items():
+                index.setdefault((actor, saved['object']), []).append(row_key)
+
+    def _views_for(self, actor, kind, oid):
+        rows = self.knowledge[str(actor)][kind]
+        return [rows[key] for key in self._indices[kind].get((actor, oid), ())]
+
+    def pending_message_ids(self):
+        return [mid for mid in self._indices['pending_messages']
+                if self.messages[mid]['deliver_round'] <= self.round]
+
     def _log(self, kind, **details):
         event = {'event_index': len(self.events), 'round': self.round, 'kind': kind, **deepcopy(details)}
         self.events.append(event)
+        self._index_ticket_grant(event)
         return event
 
     def _opportunity(self, tool, target, key):
@@ -312,7 +367,7 @@ class PolicyWorld:
         return (True, 'mandatory_joint_workflow_registered')
 
     def _received_project_assignment(self, actor, project):
-        return any((task['object'] == project['id'] and task['revision'] == project['revision'] and (task['actor'] == actor) and (task['kind'] == 'review_project') for task in self.knowledge[str(actor)]['tasks'].values()))
+        return any((task['revision'] == project['revision'] and (task['actor'] == actor) and (task['kind'] == 'review_project') for task in self._views_for(actor, 'tasks', project['id'])))
 
     def _dispatch_joint_reviews(self, project):
         (project['confirmed_by'], project['activated_round']) = ([4], None)
@@ -347,7 +402,7 @@ class PolicyWorld:
                 continue
             prior = self.knowledge[str(actor)]['tasks'].get(task['id'])
             if prior is None or prior['revision'] != definition['revision']:
-                self.knowledge[str(actor)]['tasks'][task['id']] = {**deepcopy(definition), 'state': 'pending', 'completed_round': None, 'opinion': None, 'as_of_round': self.round}
+                self._remember(actor, 'tasks', task['id'], {**definition, 'state': 'pending', 'completed_round': None, 'opinion': None, 'as_of_round': self.round})
             if task['actor'] == actor and actor not in task['assigned']:
                 task['assigned'].append(actor)
                 self._log('task_assigned', task=task['id'], object=oid, actor_id=actor)
@@ -360,39 +415,37 @@ class PolicyWorld:
         self._learn(actor, record)
         self.service_dirty.setdefault(oid, []).append(rid)
         self._log('record_created', record=record)
-        return record
         if self._ordinary_zero(oid):
             for recipient in self._members(oid):
-                self._grant(recipient, oid)
-                self._learn(recipient, record)
-            self._log('zero_friction_shared', object=oid, record=rid, recipients=self._members(oid))
-        return rid
+                if recipient != actor and not (kind == 'review_completed' and oid in self.projects and recipient == self._owner(oid)):
+                    self._message(actor, recipient, oid, 'status_reply', {'records': [record]}, free=True)
+        return record
 
     def _learn(self, actor, record):
         self._grant(actor, record['object'])
-        self.knowledge[str(actor)]['records'][record['id']] = deepcopy(record)
+        self._remember(actor, 'records', record['id'], record)
         if record['kind'] == 'project_terminal':
-            for view in self.knowledge[str(actor)]['tasks'].values():
-                if view['object'] == record['object'] and view['state'] == 'pending':
+            for view in self._views_for(actor, 'tasks', record['object']):
+                if view['state'] == 'pending':
                     view['state'] = 'cancelled'
         if record['kind'] in ('task_completed', 'review_completed', 'commissioning_result'):
             view = record['data']['task']
             prior = self.knowledge[str(actor)]['tasks'].get(view['id'])
             if prior is None or view['revision'] > prior['revision'] or (view['revision'] == prior['revision'] and (prior['state'] == 'pending' or view['as_of_round'] >= prior['as_of_round'])):
-                self.knowledge[str(actor)]['tasks'][view['id']] = deepcopy(view)
+                self._remember(actor, 'tasks', view['id'], view)
             if actor == 4 and record['object'] in self.projects and (view['kind'] == 'implement_project' or record['kind'] == 'commissioning_result'):
                 project = self.projects[record['object']]
                 self._project_lifecycle(project).receive_owner_record(record, self.knowledge['4']['tasks'], self._legal_records(4, project['id']))
 
     def _payload(self, actor, oid):
-        records = [deepcopy(r) for r in self.knowledge[str(actor)]['records'].values() if r['object'] == oid]
-        return {'records': records}
+        return {'records': self._legal_records(actor, oid)}
 
     def _message(self, sender, recipient, oid, kind, payload, free=False):
         mid = f'message-{len(self.messages) + 1}'
         due = self.round if free else self.round + 1
         message = {'id': mid, 'sender': sender, 'recipient': recipient, 'object': oid, 'kind': kind, 'created_round': self.round, 'deliver_round': due, 'delivered_round': None, 'replied': False, 'payload': deepcopy(payload), 'free_service': free}
         self.messages[mid] = message
+        self._indices['pending_messages'].append(mid)
         self._log('message_created', message=message)
         return mid
 
@@ -406,6 +459,12 @@ class PolicyWorld:
         if message['delivered_round'] is not None:
             return
         message['delivered_round'] = self.round
+        pending = self._indices['pending_messages']
+        if pending[0] == message_id:
+            pending.popleft()
+        else:
+            pending.remove(message_id)
+        self._index_record_delivery(message)
         (recipient, oid, payload) = (message['recipient'], message['object'], message['payload'])
         self._grant(recipient, oid)
         self.knowledge[str(recipient)]['inbox'].append(message['id'])
@@ -471,28 +530,27 @@ class PolicyWorld:
     def _visible_project_revision(self, actor, project):
         if actor == 4:
             return project['revision']
-        knowledge = self.knowledge[str(actor)]
-        revisions = [t['revision'] for t in knowledge['tasks'].values() if t['object'] == project['id']]
-        revisions.extend(r['data'].get('revision', 0) for r in knowledge['records'].values() if r['object'] == project['id'])
+        revisions = [t['revision'] for t in self._views_for(actor, 'tasks', project['id'])]
+        revisions.extend(r['data'].get('revision', 0) for r in self._views_for(actor, 'records', project['id']))
         return max(revisions, default=0)
 
     def _received_reviews(self, actor, project):
         reviews = {}
         revision = self._visible_project_revision(actor, project)
-        for view in self.knowledge[str(actor)]['tasks'].values():
-            if view['object'] == project['id'] and view['kind'] == 'review_project' and (view['revision'] == revision) and (view['state'] == 'completed'):
+        for view in self._views_for(actor, 'tasks', project['id']):
+            if view['kind'] == 'review_project' and (view['revision'] == revision) and (view['state'] == 'completed'):
                 reviews[view['actor']] = view['opinion']
         return reviews
 
     def _known_project_evidence(self, actor, pid):
         evidence = []
-        for record in self.knowledge[str(actor)]['records'].values():
-            if record['object'] == pid and record['kind'] == 'project_diagnosis':
+        for record in self._views_for(actor, 'records', pid):
+            if record['kind'] == 'project_diagnosis':
                 evidence = deepcopy(record['data']['evidence'])
         return evidence
 
     def _legal_records(self, actor, oid):
-        return [deepcopy(r) for r in self.knowledge[str(actor)]['records'].values() if r['object'] == oid]
+        return [deepcopy(r) for r in self._views_for(actor, 'records', oid)]
 
     def _visible_ticket(self, actor, ticket):
         result = {k: deepcopy(ticket[k]) for k in ('id', 'facility', 'district', 'category', 'reported', 'public_episode', 'lead')}
@@ -509,7 +567,7 @@ class PolicyWorld:
             result['joint_registered'] = ticket['b_registered']
             result['joint_ready'] = self._joint_ready(actor, ticket['id'])
             result['inspected_by_lead'] = ticket['inspected']
-            result['tasks'] = [deepcopy(t) for t in self.knowledge[str(actor)]['tasks'].values() if t['object'] == ticket['id']]
+            result['tasks'] = [deepcopy(t) for t in self._views_for(actor, 'tasks', ticket['id'])]
             result['received_records'] = self._legal_records(actor, ticket['id'])
             if ticket['coordination'] == 'joint' and actor in ticket['joint_participants']:
                 received = [r['author'] for r in result['received_records'] if r['kind'] == 'joint_confirmation']
@@ -528,7 +586,7 @@ class PolicyWorld:
         requested = project.get('requested') or {}
         def dispatched(view):
             return view['actor'] == actor or view['state'] != 'pending' or view['actor'] in requested.get(view['kind'], [])
-        result = {'id': pid, 'topic': project['topic'], 'mode': project['mode'], 'owner': 4, 'joint_required': project['b_required'], 'joint_registered': project['b_registered'], 'joint_ready': self._joint_ready(actor, pid), 'revision': revision, 'received_records': self._legal_records(actor, pid), 'tasks': [deepcopy(t) for t in self.knowledge[str(actor)]['tasks'].values() if t['object'] == pid and (t.get('revision') != revision or dispatched(t))], 'evidence': self._known_project_evidence(actor, pid)}
+        result = {'id': pid, 'topic': project['topic'], 'mode': project['mode'], 'owner': 4, 'joint_required': project['b_required'], 'joint_registered': project['b_registered'], 'joint_ready': self._joint_ready(actor, pid), 'revision': revision, 'received_records': self._legal_records(actor, pid), 'tasks': [deepcopy(t) for t in self._views_for(actor, 'tasks', pid) if t.get('revision') != revision or dispatched(t)], 'evidence': self._known_project_evidence(actor, pid)}
         construction = [t for t in result['tasks'] if t['kind'] == 'implement_project' and t['revision'] == revision]
         all_built = len(construction) == 2 and all((t['state'] == 'completed' for t in construction))
         result['construction'] = 'built' if all_built else 'in_progress' if any((t['state'] == 'completed' for t in construction)) else 'unknown'
@@ -662,7 +720,7 @@ class PolicyWorld:
         unique = {_canonical(a): a for a in actions}
         actions = [unique[key] for key in sorted(unique, key=lambda key: self._random('action_order', self.round, actor, key))]
         rules = deepcopy(FINITE_PUBLIC_RULES)
-        rules.update({'project_lag': self.config['project_lag'], 'project_steps': self.config['project_steps'], 'topic_analysis': {'window_rounds': None, 'minimum_distinct_episodes': self.config['signal_threshold'], 'cooldown_rounds': 0, 'group_by': ['district', 'category'], 'deduplicate_by': 'public_episode', 'submission': '引用已取得的contact材料提出待现场检验的假设；材料持续可用。'}, 'communication': '消息结算后在下一轮送达。' if not zero else '合法回执即时共享。', 'budget': '专业意见齐备后申请作业授权；当前作业所需资源可用。'})
+        rules.update({'project_lag': self.config['project_lag'], 'project_steps': self.config['project_steps'], 'topic_analysis': {'window_rounds': None, 'minimum_distinct_episodes': self.config['signal_threshold'], 'cooldown_rounds': 0, 'group_by': ['district', 'category'], 'deduplicate_by': 'public_episode', 'submission': '引用已取得的contact材料提出待现场检验的假设；材料持续可用。'}, 'communication': '消息结算后在下一轮送达。' if not zero else '合法回执在整轮结算后送达。', 'budget': '专业意见齐备后申请作业授权；当前作业所需资源可用。'})
         return decorate_observation({'spec_version': SPEC_VERSION, 'schema_version': SCHEMA_VERSION, 'round': self.round, 'horizon': None, 'actor_id': actor, 'role': ACTORS[actor], 'last_receipt': self._latest_receipt(actor), 'visible_tickets': visible_tickets, 'projects': projects, 'topics': topics, 'inbox': inbox, 'sent_messages': sent_messages, 'zero_communication_friction': zero, 'resources': {'availability': '当前作业所需资源可用'}, 'public_rules': rules, 'available_actions': actions, 'materials': projection(self, actor)})
 
     def submit(self, actor_id, action):
@@ -739,7 +797,8 @@ class PolicyWorld:
             if self.config['zero_communication_friction'] and (not ticket['b_required']):
                 ticket['coordination'] = 'conventional'
                 for other in ticket['known_required']:
-                    self._send_assignment(actor, other, target, 'case_assignment', definitions, free=True)
+                    if other != actor:
+                        self._send_assignment(actor, other, target, 'case_assignment', definitions, free=True)
                 self._log('zero_friction_coordination', ticket=target, participants=self._members(target))
             return (True, 'inspection_revealed_local_task_plan')
         if kind in ('work', 'review_project', 'implement_project', 'commission_project'):
@@ -901,7 +960,7 @@ class PolicyWorld:
             if project:
                 return self._project_lifecycle(project).complete_construction(actor, task, capital, self.knowledge[str(actor)]['tasks'])
         (task['state'], task['completed_round']) = ('completed', self.round)
-        self.knowledge[str(actor)]['tasks'][target] = self._task_view(task)
+        self._remember(actor, 'tasks', target, self._task_view(task))
         record = self._record(oid, actor, 'review_completed' if kind == 'review_project' else 'task_completed', {'task': self._task_view(task), 'capital_spent': 0 if kind == 'review_project' else capital})
         self._log('task_reviewed' if kind == 'review_project' else 'task_completed', task=target, object=oid, actor_id=actor, task_kind=kind, opinion=task['opinion'])
         if kind == 'review_project' and project:
@@ -1182,7 +1241,8 @@ class PolicyWorld:
         return {'schema_version': SCHEMA_VERSION, 'spec_version': SPEC_VERSION, 'scenario_id': self.scenario['id'], 'family': self.scenario['family'], 'environment': self.scenario['environment'], 'round': self.round, 'horizon': None, 'policy': self.policy, 'seed': self.seed, 'initial_issues': len(initial), 'initial_resolved': sum((i['resolved'] is not None for i in initial)), 'initial_resolution_rate': sum((i['resolved'] is not None for i in initial)) / len(initial), 'initial_censored_mean_time': sum((i['resolved'] if i['resolved'] is not None else self.round for i in initial)) / len(initial), 'unresolved_issues': sum((i['resolved'] is None for i in self.issues.values())), 'cumulative_issue_burden': sum(self.burden_by_round), 'normalized_burden': None, 'common_stage_burden': None, 'common_stage_rounds': None, 'common_window_burden': None, 'common_window_rounds': None, 'new_issues': sum((not i['initial'] for i in self.issues.values())), 'recurrent_episodes': sum((i['recurrence'] for i in self.issues.values())), 'repeat_contacts': sum((c['repeat'] for c in self.contacts)), 'facility_at_risk_rounds': sum((e['kind'] == 'external_shock' and e['at_risk'] for e in self.events)), 'at_risk_facility_rounds': sum((e['kind'] == 'external_shock' and e['at_risk'] for e in self.events)), 'repaired_facilities': sum((f['root_repaired'] for f in self.facilities.values())), 'source_repaired_facilities': sum((f['root_repaired'] for f in self.facilities.values())), 'first_routing_match_rate': sum((e['initially_matched'] for e in routed)) / len(routed) if routed else None, 'projects_completed': sum((p['state'] == 'completed' for p in self.projects.values())), 'projects_completed_definition': 'administrative_acceptance_only; use projects_physically_effective for physical effects', 'projects_built': sum((p['construction'] == 'built' for p in self.projects.values())), 'projects_commissioned': sum((p['commissioning_assessment'] is not None and p['commissioning_assessment']['success'] for p in self.projects.values())), 'projects_commissioning_failed': sum((p['physical'] == 'commissioning_failed' for p in self.projects.values())), 'projects_physically_effective': sum((p['physical'] == 'effective' for p in self.projects.values())), 'projects_administratively_accepted': sum((p['administrative'] == 'accepted' for p in self.projects.values())), 'project_stage_delays': stage_delays, 'commissioning_labor': round(sum((e['labor'] for e in resources if e['reason'] == 'commission_project')), 8), 'projects_failed': sum((p['state'] == 'failed' for p in self.projects.values())), 'projects_cancelled': sum((p['state'] == 'cancelled' for p in self.projects.values())), 'labor_spent': round(sum((e['labor'] for e in resources)), 8), 'capital_spent': round(sum((e['capital'] for e in resources)), 8), 'shared_crew_units_spent': sum((e['crew'] for e in resources)), 'tool_process': process, 'communication_labor': round(sum((e['labor'] for e in resources if e['reason'] in COMMUNICATION_KINDS or e['reason'] == 'request_coordination')), 8), 'maintenance_labor': round(sum((e['labor'] for e in resources if e['reason'] == 'shared_record_maintenance')), 8), 'business_rejections': sum((e['status'] == 'business_rejected' for e in results)), 'shared_update_failures': sum((e['kind'] == 'shared_update_failed' for e in self.events)), 'parameter_basis': 'synthetic_uncalibrated', 'unit_of_replication': 'complete_simulation_run'}
 
     def export_state(self):
-        return {'schema_version': SCHEMA_VERSION, 'spec_version': SPEC_VERSION, **deepcopy(self.__dict__)}
+        return {'schema_version': SCHEMA_VERSION, 'spec_version': SPEC_VERSION,
+                **deepcopy({key: value for key, value in self.__dict__.items() if key != '_indices'})}
 
     @classmethod
     def from_state(cls, state, workload_mode=None):
@@ -1198,6 +1258,7 @@ class PolicyWorld:
         if saved_mode == 'finite' and state.get('scenario', {}).get('schedule'):
             raise ValueError('finite workload requires a static scenario')
         world = cls.__new__(cls)
-        world.__dict__.update(deepcopy({k: v for (k, v) in state.items() if k not in ('schema_version', 'spec_version')}))
+        world.__dict__.update(deepcopy({k: v for (k, v) in state.items() if k not in ('schema_version', 'spec_version', '_indices')}))
         world.workload_mode = saved_mode
+        world._rebuild_indices()
         return world

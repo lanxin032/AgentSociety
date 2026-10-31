@@ -31,15 +31,34 @@ def code_manifest(root):
         if is_public_source(path, root):
             files.append({"path": path.relative_to(root).as_posix(),
                           "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
-    environment = root / 'environment.yml'
-    if is_public_source(environment, root):
-        files.append({'path': 'environment.yml', 'sha256': hashlib.sha256(environment.read_bytes()).hexdigest()})
+    for name in ('environment.yml', 'requirements.lock'):
+        path = root / name
+        if is_public_source(path, root):
+            files.append({'path': name, 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()})
     return sorted(files, key=lambda row: row["path"])
 
 
 def code_digest(root):
     return hashlib.sha256(json.dumps(code_manifest(root), sort_keys=True,
                                     separators=(",", ":")).encode()).hexdigest()
+
+
+def runtime_environment():
+    """Check the installed lock and record the environment used by a run."""
+    from importlib.metadata import version
+    import platform
+    packages = {}
+    lock = Path(__file__).resolve().parents[1] / 'requirements.lock'
+    for line in lock.read_text().splitlines():
+        if not line or line.startswith('#'):
+            continue
+        name, expected = line.split('==')
+        actual = version(name)
+        if actual != expected:
+            raise ValueError(f'{name} differs from requirements.lock: expected {expected}, installed {actual}')
+        packages[name] = actual
+    return {'python': platform.python_version(), 'platform': platform.system(),
+            'machine': platform.machine(), 'packages': packages}
 
 
 def select_run(manifest, run_id):

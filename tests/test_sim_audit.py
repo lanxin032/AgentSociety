@@ -212,6 +212,72 @@ class OfficialTurnAuditTests(unittest.TestCase):
 
 
 class InstalledLoopEvidenceTests(unittest.IsolatedAsyncioTestCase):
+    async def test_run_audit_binds_world_policy_to_frozen_record(self):
+        import shutil
+        from tests.test_sim_framework import FrameworkTests
+        from policy_sim.checkpoints import commit_round
+        from policy_sim.io import read_json, write_json
+        from policy_sim.profiles import settings_for_purpose
+        from policy_sim.runtime import code_manifest, runtime_environment
+        from policy_sim.spec import SPEC_VERSION
+        from policy_sim.verify import verify_run
+        repo = Path(__file__).resolve().parents[1]
+        harness = FrameworkTests('test_official_lifecycle_four_finished_barrier_and_restore')
+        await harness.asyncSetUp()
+        try:
+            frozen = read_json(harness.root / 'run_config.json')
+            world = harness.router.world.export_state()
+            frozen.update(version=SPEC_VERSION, mode='scripted', horizon=None, seed=world['seed'],
+                          scenario=world['scenario'], code_manifest=code_manifest(repo),
+                          request_settings=settings_for_purpose(frozen['runtime_profile']),
+                          runtime_environment=runtime_environment())
+            frozen['record'].update(policy='000', runtime_profile=frozen['runtime_profile'])
+            write_json(harness.root / 'run_config.json', frozen)
+            write_json(harness.root / 'SOCIETY_STEP.json', {'step_count': 0})
+            await harness.router.to_workspaces()
+            commit_round(harness.root, 0, harness.router.world.export_state(), [])
+            for officer in harness.actors:
+                await officer.step(1, harness.now)
+                await officer.to_workspace(officer.workspace_root_path())
+            await harness.accept_results()
+            await harness.router.step(1, harness.now)
+            await harness.router.to_workspaces()
+            write_json(harness.root / 'SOCIETY_STEP.json', {'step_count': 1})
+            commit_round(harness.root, 1, harness.router.world.export_state(), [])
+            profile = frozen['runtime_profile']
+            write_json(harness.root / 'driver_latest.json', {'ok': True, 'ray_shutdown': True,
+                'completed_steps': 1, 'routing': 'official_PersonAgent_ReActRouter',
+                'framework_version': profile['framework_version'], 'source_manifest': frozen['code_manifest'],
+                'runtime_profile': profile, 'runtime_environment': frozen['runtime_environment']})
+            write_json(harness.root / 'controller-fixture.json', {'invocation_id': 'fixture',
+                'mode': 'scripted', 'requests': 0, 'request_receipts': [], 'requested_steps': 1,
+                'measured_rounds': 1, 'committed_steps': 1, 'status': 'checkpoint',
+                'clean_commit': True, 'ray_shutdown': True, 'run_id': 'test',
+                'runtime_profile': profile, 'source_manifest': frozen['code_manifest']})
+            result = verify_run(harness.root, repo)
+            self.assertTrue(result['passed'], result['errors'])
+            self.assertEqual(result['policy'], '000')
+            driver = read_json(harness.root / 'driver_latest.json')
+            write_json(harness.root / 'driver_latest.json', {**driver, 'runtime_environment': {}})
+            result = verify_run(harness.root, repo)
+            self.assertFalse(result['passed'], result['errors'])
+            self.assertIn('Official driver evidence incomplete or different', result['errors'])
+            write_json(harness.root / 'driver_latest.json', driver)
+            for policy in ('111', None):
+                if policy is None:
+                    frozen['record'].pop('policy')
+                else:
+                    frozen['record']['policy'] = policy
+                for location in (harness.root, *(harness.root.parent / (harness.root.name + '-commits')).glob('round-*')):
+                    write_json(location / 'run_config.json', frozen)
+                result = verify_run(harness.root, repo)
+                self.assertFalse(result['passed'], result['errors'])
+                self.assertIn('World policy differs from frozen record', result['errors'])
+        finally:
+            harness.no_network.stop()
+            harness.tmp.cleanup()
+            shutil.rmtree(harness.root.parent / (harness.root.name + '-commits'), ignore_errors=True)
+
     async def test_native_audit_accepts_finished_unfiled_and_fallback_filed_turns(self):
         from tests.test_sim_framework import FrameworkTests
         from policy_sim.agent import tool_response
@@ -245,6 +311,7 @@ class InstalledLoopEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     for officer in harness.actors:
                         await officer.step(1, harness.now)
                         await officer.to_workspace(officer.workspace_root_path())
+                    await harness.accept_results()
                     await harness.router.step(1, harness.now)
                     await harness.router.to_workspaces()
                     result = audit_native(harness.root)
@@ -333,6 +400,7 @@ class InstalledLoopEvidenceTests(unittest.IsolatedAsyncioTestCase):
                 await actor.step(1, harness.now)
             self.assertEqual(harness.router.world.round, 0)
             self.assertGreater(len(read_calls), 1)
+            await harness.accept_results()
             await harness.router.step(1, harness.now)
             await harness.router.to_workspaces()
             from policy_sim.audit import audit_mailbox
@@ -351,20 +419,22 @@ class InstalledLoopEvidenceTests(unittest.IsolatedAsyncioTestCase):
             summaries, routes = audit_turns(rows, _rows(harness.root / 'observations.jsonl'),
                 _rows(harness.root / 'actions.jsonl'), _rows(harness.root / 'material_reads.jsonl'),
                 harness.router.world.export_state(), tool_receipts=receipts,
-                environment_routes=_rows(harness.root / 'native_routes.jsonl'))
+                environment_routes=_rows(harness.root / 'native_routes.jsonl'),
+                environment_decisions=_rows(harness.root / 'native_router_decisions.jsonl'))
             self.assertEqual(len(summaries), 4)
             self.assertEqual(len(routes), 4)
             self.assertEqual(routes, _rows(harness.root / 'native_routes.jsonl'))
-            self.assertFalse((harness.root / 'native_router_decisions.jsonl').exists())
+            self.assertTrue((harness.root / 'native_router_decisions.jsonl').exists())
             forged = deepcopy(receipts)
             forged[0]['args']['instruction'] = 'Changed actor request'
             with self.assertRaises(ValueError):
                 audit_turns(rows, _rows(harness.root / 'observations.jsonl'),
                     _rows(harness.root / 'actions.jsonl'), _rows(harness.root / 'material_reads.jsonl'),
                     harness.router.world.export_state(), tool_receipts=forged,
-                    environment_routes=_rows(harness.root / 'native_routes.jsonl'))
+                    environment_routes=_rows(harness.root / 'native_routes.jsonl'),
+                environment_decisions=_rows(harness.root / 'native_router_decisions.jsonl'))
             router_rows = _rows(harness.root / 'native_routes.jsonl')
-            for damage in ('route_operation', 'route_payload', 'prompt_memory', 'prompt_phase', 'tool_authority', 'extra_receipt'):
+            for damage in ('route_operation', 'route_payload', 'prompt_memory', 'prompt_candidate_count', 'tool_authority', 'extra_receipt'):
                 altered_rows, altered_routes, altered_receipts = deepcopy(rows), deepcopy(router_rows), deepcopy(receipts)
                 if damage == 'route_operation':
                     altered_routes[0]['operation'] = 'observe'
@@ -372,10 +442,10 @@ class InstalledLoopEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     altered_routes[0]['payload'] = {**altered_routes[0]['payload'], 'reason': 'forged justification'}
                 elif damage == 'prompt_memory':
                     altered_rows[-1]['messages'][1]['content'] = altered_rows[-1]['messages'][1]['content'].replace('<memory_context>', '<memory_context>Hidden world state')
-                elif damage == 'prompt_phase':
+                elif damage == 'prompt_candidate_count':
                     content = altered_rows[0]['messages'][1]['content']
-                    self.assertIn('"phase": "choose"', content)
-                    altered_rows[0]['messages'][1]['content'] = content.replace('"phase": "choose"', '"phase": "finish"', 1)
+                    self.assertIn('"candidate_count":', content)
+                    altered_rows[0]['messages'][1]['content'] = content.replace('"candidate_count":', '"forged_candidate_count":', 1)
                 elif damage == 'tool_authority':
                     altered_rows[0]['request_options']['tools'][0]['function']['parameters'] = {}
                 else:
@@ -384,7 +454,8 @@ class InstalledLoopEvidenceTests(unittest.IsolatedAsyncioTestCase):
                     audit_turns(altered_rows, _rows(harness.root / 'observations.jsonl'),
                         _rows(harness.root / 'actions.jsonl'), _rows(harness.root / 'material_reads.jsonl'),
                         harness.router.world.export_state(), tool_receipts=altered_receipts,
-                        environment_routes=altered_routes)
+                        environment_routes=altered_routes,
+                        environment_decisions=_rows(harness.root / 'native_router_decisions.jsonl'))
             count = audit_finish_memories(harness.root, rows, _rows(harness.root / 'actions.jsonl'))
             self.assertGreaterEqual(count, 4)
             path = next((harness.root / 'agents').rglob('episodes.jsonl'))

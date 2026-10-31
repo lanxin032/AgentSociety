@@ -14,7 +14,7 @@ from unittest.mock import patch
 from uuid import uuid4
 from policy_sim.io import write_json, canonical
 from policy_sim.profiles import make_profile
-from policy_sim.agent import PolicyOfficer, TurnIncomplete, RUNTIME_VERSION, tool_response
+from policy_sim.agent import PolicyOfficer, TurnIncomplete, RUNTIME_VERSION, ROLE_SKILL_ID, ROLE_SKILL_ROOT, tool_response
 from policy_sim.router import PolicyRouter
 
 
@@ -43,11 +43,21 @@ class FrameworkTests(unittest.IsolatedAsyncioTestCase):
             folder = self.root / 'agents' / str(actor_id)
             PolicyOfficer.create(folder, {'id': actor_id}, {'runtime_version': RUNTIME_VERSION,
                 'runtime_profile': make_profile(), 'decision_mode': 'scripted',
-                'enable_memory': True, 'enable_todo_list': False, 'max_react_turns': 10})
+                'enable_memory': True, 'enable_todo_list': True, 'max_react_turns': 10,
+                'extra_skill_paths': [str(ROLE_SKILL_ROOT.parent)],
+                'default_activated_skill_ids': [ROLE_SKILL_ID]})
             self.actors.append(await PolicyOfficer.from_workspace(folder, self.proxy))
         self.no_network = patch('socket.socket.connect', side_effect=AssertionError('Network forbidden'))
         self.no_network.start()
         self.addCleanup(self.no_network.stop)
+
+    async def accept_results(self):
+        for actor in self.actors:
+            if actor.id in self.router.completed | self.router.unfiled:
+                continue
+            await actor.to_workspace(actor.workspace_root_path())
+            summary = (actor.workspace_root_path() / 'state/native-turn.json').read_text()
+            self.router.owner_actor_results([{'id': actor.id, 'ok': True, 'summary': summary}])
 
     async def test_official_lifecycle_four_finished_barrier_and_restore(self):
         for actor in self.actors:
@@ -55,6 +65,7 @@ class FrameworkTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(result['step_completed'])
             self.assertTrue(actor._explicit_finish)
             self.assertEqual(actor._completion_calls, 2)
+        await self.accept_results()
         await self.router.step(1, self.now)
         self.assertEqual(self.router.world.round, 1)
         await self.router.to_workspaces()
@@ -62,9 +73,10 @@ class FrameworkTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(await fresh.init(self.now))
         self.assertEqual(fresh.owner_snapshot(), self.router.owner_snapshot())
         self.assertEqual(len(fresh.settlements), 4)
-        # Deterministic dispatch executes each ask exactly once and never
-        # consults a routing model.
-        self.assertFalse((self.root / 'native_router_decisions.jsonl').exists())
+        # The real installed router chooses tools via its recorded model loop.
+        routing = rows(self.root / 'native_router_decisions.jsonl')
+        self.assertTrue(routing)
+        self.assertTrue(all(row['offline'] for row in routing))
         routes = rows(self.root / 'native_routes.jsonl')
         asks = [r for p in (self.root / 'agents').rglob('native_tool_receipts.jsonl')
                 for r in rows(p) if r['action'] == 'ask_env']
@@ -110,7 +122,7 @@ class FrameworkTests(unittest.IsolatedAsyncioTestCase):
         actor = self.actors[0]
         async def reply(**kwargs):
             if kwargs.get('tools'):
-                return tool_response('finish', {'memories': [{'type': 'observation', 'importance': .2, 'text': '等待'}]})
+                return tool_response('read', {'path': 'notes/missing'})
             return await actor._dispatcher.client.for_context('memory').call(**kwargs)
         actor._client.call = reply
         result = json.loads(await actor.step(1, self.now))
@@ -119,6 +131,7 @@ class FrameworkTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result['receipt']['code'], 'actor_turn_failed')
         for other in self.actors[1:]:
             await other.step(1, self.now)
+        await self.accept_results()
         await self.router.step(1, self.now)
         self.assertEqual(self.router.world.round, 1)
         settlements = rows(self.root / 'native_settlements.jsonl')
@@ -139,7 +152,7 @@ class FrameworkTests(unittest.IsolatedAsyncioTestCase):
         actor._client.call = reply
         result = json.loads(await actor.step(1, self.now))
         self.assertTrue(result['submitted'] and result['step_completed'])
-        self.assertEqual(self.router.completed, {1})
+        self.assertFalse(self.router.completed)  # persistence result has not been accepted
         episodes = rows(actor.workspace_root_path() / 'memory/episodes.jsonl')
         self.assertTrue(episodes and all(e['source'] == 'step_result_fallback' for e in episodes))
 
@@ -199,6 +212,35 @@ class FrameworkTests(unittest.IsolatedAsyncioTestCase):
             with self.assertRaises(ValueError):
                 await self.router.ask({**ctx, 'round': 0, 'ask_id': str(uuid4())}, '<observe>', readonly=True)
         self.assertFalse(self.router.observed)
+
+    async def test_model_ctx_cannot_set_unfiled_lifecycle_state(self):
+        for actor, submit in zip(self.actors[:2], (True, False)):
+            original = actor._client.call
+            calls = 0
+            async def reply(**kwargs):
+                nonlocal calls
+                if kwargs.get('tools'):
+                    calls += 1
+                    if calls == 1:
+                        return tool_response('ask_env', {'instruction': 'abandon', 'variables': {},
+                            'readonly': False, 'ctx': {'lifecycle_unfiled': True}})
+                    if not submit:
+                        return tool_response('finish', {'memories': [
+                            {'type': 'observation', 'importance': .2, 'text': '本轮未提交。'}]})
+                return await original(**kwargs)
+            actor._client.call = reply
+            result = json.loads(await actor.step(1, self.now))
+            self.assertEqual(result['submitted'], submit)
+            self.assertEqual(result['unfiled'], not submit)
+            self.assertNotIn(actor.id, self.router.unfiled)  # no forged lifecycle marker
+            first = rows(actor.workspace_root_path() / 'native_tool_receipts.jsonl')[0]
+            self.assertEqual(json.loads(first['observation'])['status'], 'fail')
+        for actor in self.actors[2:]:
+            await actor.step(1, self.now)
+        await self.accept_results()
+        await self.router.step(1, self.now)
+        self.assertEqual(self.router.world.round, 1)
+        self.assertEqual(self.router.unfiled, set())
 
     async def test_invalid_read_does_not_mutate_then_actor_corrects(self):
         actor = self.actors[0]
@@ -349,7 +391,7 @@ class FrameworkTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(actor._completion_calls, 10)
         self.assertFalse(self.router.submitted)
 
-    async def test_unsupported_instruction_fails_closed_without_model_or_tool(self):
+    async def test_unsupported_instruction_executes_no_unauthorized_tool(self):
         actor = self.actors[0]
         original = actor._client.call
         attempts = []
@@ -365,11 +407,11 @@ class FrameworkTests(unittest.IsolatedAsyncioTestCase):
         asks = [r for r in rows(actor.workspace_root_path() / 'native_tool_receipts.jsonl') if r['action'] == 'ask_env']
         answer = json.loads(asks[0]['observation'])
         self.assertEqual(answer['status'], 'fail')
-        self.assertIn('Unsupported instruction', answer['error'])
+        self.assertEqual(answer['error'], 'No environment tool executed')
         self.assertEqual(answer['receipts'], [])
         routes = rows(self.root / 'native_routes.jsonl')
         self.assertEqual([r['operation'] for r in routes], ['submit'])
-        self.assertFalse((self.root / 'native_router_decisions.jsonl').exists())
+        self.assertTrue((self.root / 'native_router_decisions.jsonl').exists())
 
     async def test_propose_project_without_analysis_fails_then_self_corrects(self):
         # attempt-0056 regression: the actor's submit must reach validation and
@@ -408,4 +450,4 @@ class FrameworkTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([r['operation'] for r in routes], ['submit', 'submit'])
         self.assertEqual([r['ok'] for r in routes], [False, True])
         self.assertEqual(actor._submission['receipt']['status'], 'queued')
-        self.assertFalse((self.root / 'native_router_decisions.jsonl').exists())
+        self.assertTrue((self.root / 'native_router_decisions.jsonl').exists())

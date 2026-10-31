@@ -88,6 +88,9 @@ def open_stage_ledger(root, authorization_path, manifest_path, stage):
             max_output_tokens=16384,
             request_metadata={"authorization_id": authorization["authorization_id"]})
         validate(ledger.records)
+        if any(row.get("status") == "reserved" for row in ledger.records):
+            raise BudgetError("Ledger has unsettled reserved requests; inspect original evidence before continuing",
+                              error_type="evidence_or_authorization")
         ledger.records_validator = validate
         ledger.authorization = authorization
         return ledger

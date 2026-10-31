@@ -34,6 +34,7 @@ class NativeHandoffTests(unittest.IsolatedAsyncioTestCase):
         with patch.object(SimpleSocialSpace, "send_message", send), patch.object(SimpleSocialSpace, "receive_messages", receive):
             for actor in fixture.actors:
                 await actor.step(1, fixture.now)
+            await fixture.accept_results()
             await fixture.router.step(1, fixture.now)
             self.assertTrue(sent, "Business assignment bypassed the official mailbox")
             self.assertTrue(received, "Business knowledge was granted without an official receive")

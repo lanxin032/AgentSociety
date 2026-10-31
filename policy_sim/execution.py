@@ -250,7 +250,9 @@ class AttemptRegistry:
         return self.latest(starts[-1]['attempt_id']) if starts else None
 
     def start(self, run_id, authorization_id, cap=MAX_ATTEMPTS, **bindings):
-        used = sum(e['kind'] == 'start' and e.get('authorization_id') == authorization_id for e in self.events)
+        # Manual continuations do not consume another run's initial attempt.
+        used = sum(e['kind'] == 'start' and e.get('authorization_id') == authorization_id
+                   and e.get('manual_continuation') is not True for e in self.events)
         if used >= cap:
             raise ExecutionError('Stage authorization attempt cap exhausted')
         aid = f'attempt-{sum(e["kind"] == "start" for e in self.events) + 1:04d}'
@@ -306,6 +308,9 @@ def execute_stage(root, manifest_path, authorization_path, output, *, resume=Fal
         else:
             if output.exists():
                 raise ExecutionError('Output exists; evidence cannot be overwritten')
+        from .budget import open_stage_ledger
+        open_stage_ledger(root, authorization_path, manifest_path, manifest['stage'])
+        if not resume:
             output.mkdir(parents=True)
             state = {**binding, 'status': 'prepared', 'runs': {r['run_id']: {'status': 'prepared'} for r in runs}}
             write_json(output / 'stage_review.json', {**binding, 'source_manifest': code_manifest(root),
@@ -315,7 +320,7 @@ def execute_stage(root, manifest_path, authorization_path, output, *, resume=Fal
             if row['status'] == 'complete':
                 validate_commit(Path(row['output_path']))
                 continue
-            if resume:
+            if resume and row['status'] != 'prepared':
                 previous_output = Path(row['output_path'])
                 latest = read_json(previous_output.parent / (previous_output.name + '-commits') / 'latest.json')
                 snapshot = Path(latest['path'])

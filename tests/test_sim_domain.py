@@ -168,6 +168,7 @@ class FiniteWorldTests(unittest.TestCase):
         knowledge['records']['commission'] = {
             'object': project['id'], 'kind': 'commissioning_result',
             'data': {'revision': 1, 'success': True, 'effective_at': 0}}
+        world._rebuild_indices()  # the known-answer fixture directly edits delivered knowledge
         view = world._visible_project(2, project)
         self.assertEqual(view['revision'], 1)
         self.assertEqual(world._received_reviews(2, project), {2: 'approve', 3: 'approve'})
@@ -175,6 +176,7 @@ class FiniteWorldTests(unittest.TestCase):
         self.assertEqual((view['physical'], view['effective_at']), ('effective', 0))
         knowledge['records']['plan-v2'] = {
             'object': project['id'], 'kind': 'proposed_plan', 'data': {'revision': 2}}
+        world._rebuild_indices()  # the known-answer fixture directly edits delivered knowledge
         view = world._visible_project(2, project)
         self.assertEqual(view['revision'], 2)
         self.assertEqual(world._received_reviews(2, project), {})
@@ -197,6 +199,19 @@ class FiniteWorldTests(unittest.TestCase):
 
     def make_world(self, **kwargs):
         return PolicyWorld('000', seed=3001, workload_mode='finite', horizon=None, **kwargs)
+
+    def test_zero_friction_legal_witness_completes_cases_and_projects(self):
+        world = self.make_world(config={'zero_communication_friction': True})
+        run_witness(world, max_steps=150)
+        self.assertTrue(world.completion_status()['complete'])
+        self.assertTrue(any(r['kind'] == 'commissioning_result' for r in world.records.values()))
+        self.assertTrue(all(m['sender'] != m['recipient'] for m in world.messages.values()
+                            if m['free_service'] and m['kind'] == 'status_reply'))
+        for record in world.records.values():
+            if record['kind'] == 'review_completed':
+                deliveries = [m for m in world.messages.values() if m['recipient'] == 4
+                              and record in m['payload'].get('records', [])]
+                self.assertEqual(len(deliveries), 1)
 
     def test_wait_after_sixty_and_persistent_sources(self):
         world = self.make_world(config={'labor_per_actor': 0, 'capital': 0})

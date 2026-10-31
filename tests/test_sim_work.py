@@ -57,6 +57,50 @@ class DispatchPlanTests(unittest.TestCase):
 
 
 class WorkContextTests(unittest.TestCase):
+    def test_redrafted_project_remains_readable_through_bounded_subpages(self):
+        from tests.test_sim_domain import deliver_pending, finite_witness_action
+        from policy_sim.work import read_work_section, SECTION_BYTES
+        world = PolicyWorld('000', seed=3001)
+        for kind in ('propose_project', 'confirm_project_lead', 'diagnose_project', *(['draft_plan'] * 9)):
+            for actor in (1, 2, 3, 4):
+                obs = world.observe(actor)
+                if actor != 4:
+                    action = next(a for a in obs['available_actions'] if a['kind'] == 'wait')
+                elif kind == 'propose_project':
+                    action = finite_witness_action(obs)
+                else:
+                    action = next(a for a in obs['available_actions'] if a['kind'] == kind)
+                self.assertEqual(world.submit(actor, action)['status'], 'queued')
+            world.advance()
+            deliver_pending(world)
+        observation = world.observe(4)
+        self.assertEqual(observation['projects'][0]['revision'], 9)
+        context = WorkContext(observation)
+        page = context.read_work_once(**context.current_work['projects']['read_work'])
+        self.assertLessEqual(_size(page), SECTION_BYTES)
+        project = page['value'][0]
+        for field in ('tasks', 'received_records'):
+            query = project[field]['read_work']
+            collected = []
+            while True:
+                page = context.read_work_once(**query)
+                self.assertLessEqual(_size(page), SECTION_BYTES)
+                self.assertEqual(page['as_of_round'], world.round)
+                collected.extend(page['value'])
+                if page['complete']:
+                    break
+                self.assertGreater(page['next_offset'], query['offset'])
+                query = {**query, 'offset': page['next_offset']}
+            self.assertEqual(len(collected), project[field]['count'])
+            project[field] = collected
+        self.assertEqual(project, lawful_work(observation)['projects'][0])
+        self.assertEqual(context.observation, observation)
+        for obs, section in ((world.observe(2), 'projects/P:1/tasks'),
+                             (observation, 'projects/P:999/tasks'),
+                             (observation, 'projects/P:1/hidden_true_cause')):
+            with self.assertRaises(ValueError):
+                read_work_section(obs, section)
+
     def test_empty_status_reply_carries_inband_note_everywhere(self):
         # attempt-0059 regression: a contentless reply must say so in-band,
         # or its recipient re-reads it until the official loop exhausts.
@@ -78,14 +122,14 @@ class WorkContextTests(unittest.TestCase):
         # attempt-0060 regression: pages must state their as-of round and the
         # persistent guidance must forbid intra-round polling and last-turn submits.
         from policy_sim.work import read_work_section
-        from policy_sim.prompt import WORLD_DESCRIPTION
+        from policy_sim.agent import ROLE_SKILL_ROOT
         obs = PolicyWorld(policy='000', seed=3001).observe(2)
         obs['round'] = 7
         self.assertEqual(read_work_section(obs, 'visible_tickets')['as_of_round'], 7)
         self.assertEqual(read_work_section(obs, 'topics')['as_of_round'], 7)
-        self.assertIn('as_of_round', WORLD_DESCRIPTION)
-        self.assertIn('不能等待前置任务完成', WORLD_DESCRIPTION)
-        self.assertIn('不要把提交留到本轮最后一次工具调用', WORLD_DESCRIPTION)
+        guidance = (ROLE_SKILL_ROOT / 'SKILL.md').read_text()
+        self.assertIn('时间只在整轮结算后推进', guidance)
+        self.assertIn('查询本轮状态不会促成新的交接', guidance)
 
     def test_batch_limit_errors_state_the_bound_and_teach_it(self):
         # attempt-0061 regression: a rejected request must say its exact limit,

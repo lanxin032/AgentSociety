@@ -63,7 +63,7 @@ def require_baseline(manifest, root):
     from .verify import verify_run
     result = verify_run(path, root)
     frozen = json.loads((path / "run_config.json").read_text())
-    if (not result.get("passed") or not result.get("workload_complete")
+    if (not result.get("passed") or not result.get("workload_complete") or result.get("policy") != "000"
             or frozen.get("mode") != "llm" or frozen.get("record", {}).get("policy") != "000"
             or frozen.get("runtime_profile") != manifest["runtime_profile"]
             or frozen.get("code_manifest") != code_manifest(root)

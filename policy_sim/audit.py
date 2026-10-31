@@ -86,7 +86,6 @@ def _finish(args):
 def audit_finish_memories(run_dir, decisions, actions):
     """Match saved official episodes to raw finish and independently checked actions."""
     from .interface import canonical
-    submitted = _unique(actions)
     expected = {}
     for row in decisions:
         if row.get('response_error'):
@@ -106,7 +105,6 @@ def audit_finish_memories(run_dir, decisions, actions):
                     'keywords': list(dict.fromkeys(s.strip() for s in raw.get('keywords', []) if s.strip())),
                     'refs': list(dict.fromkeys(s.strip() for s in raw.get('refs', []) if s.strip()))})
             expected[key] = memories
-    _require(set(expected) <= set(submitted), 'Finish lacks a business submission')
     groups = defaultdict(list)
     for row in decisions:
         groups[_key(row)].append(row)
@@ -268,7 +266,8 @@ def audit_native(run_dir, ledger_receipts=None):
         tool_receipts = [r for p in (root / 'agents').rglob('native_tool_receipts.jsonl') for r in _rows(p)]
         decisions = hydrate_traces(root, decisions)
         routes = _rows(root / 'native_routes.jsonl')
-        (summaries, selected_routes) = audit_turns(decisions, observations, actions, reads, state, profile, tool_receipts, audit_personal_contexts(root, state, frozen), routes)
+        router_decisions = hydrate_traces(root, _rows(root / 'native_router_decisions.jsonl'))
+        (summaries, selected_routes) = audit_turns(decisions, observations, actions, reads, state, profile, tool_receipts, audit_personal_contexts(root, state, frozen), routes, router_decisions)
         checks['actor_rounds'] = len(summaries)
         checks['finish_episodes'] = audit_finish_memories(root, decisions, actions)
         for path in (root / 'agents').rglob('native_failures.jsonl'):
@@ -314,6 +313,7 @@ def audit_native(run_dir, ledger_receipts=None):
     result['T_system'] = result['system_usage']['total_tokens']
     if 'frozen' in locals() and 'state' in locals():
         result['comparison_identity'] = {'workload_mode': state.get('workload_mode'), 'seed': state.get('seed'), 'initial_workload': [{k: i.get(k) for k in ('id', 'facility', 'created', 'initial')} for i in state.get('issues', {}).values() if i.get('initial')], 'source_manifest': frozen.get('code_manifest'), 'runtime_profile': frozen.get('runtime_profile'), 'prompt_version': frozen.get('runtime_profile', {}).get('prompt_version', frozen.get('prompt_version', frozen.get('record', {}).get('prompt_version'))), 'scenario_conditions': {k: v for (k, v) in state.get('scenario', {}).items() if k not in ('id', 'q')}, 'config': state.get('config')}
+        result['comparison_identity']['runtime_environment'] = frozen.get('runtime_environment')
     result['passed'] = not errors
     result['status'] = 'passed' if result['passed'] else 'failed'
     result['audit_complete'] = result['passed']
@@ -348,16 +348,145 @@ def _prompt_blocks(messages):
     import re
     _require(isinstance(messages, list) and len(messages) >= 2 and messages[0].get('role') == 'system' and messages[1].get('role') == 'user', 'Missing official prompt')
     content = messages[1]['content']
-    matches = list(re.finditer(r'<(recent_observations|memory_context|agent)>\n(.*?)\n</\1>', content, re.S))
+    matches = list(re.finditer(r'<(recent_observations|memory_context|todo_context|agent)>\n(.*?)\n</\1>', content, re.S))
     _require(''.join(content[m.start():m.end()] for m in matches).replace('\n', '') == content.replace('\n', ''), 'Unexpected dynamic prompt block')
     blocks = {m[1]: _strict(m[2]) for m in matches}
     _require(len(blocks) == len(matches) and {'agent', 'recent_observations'} <= blocks.keys(), 'Missing/duplicate prompt blocks')
     return blocks
 
 
-def audit_environment(routes, tool_receipts):
-    """Verify every actor ask executed exactly its deterministic template dispatch."""
+def _environment_tools():
+    """Independent frozen tool contract; never use the execution guard as proof."""
+    specs = [
+        ('observe', "Return this actor's current legal overview; repeated reads do not advance time.", {}, []),
+        ('read_materials', "Read up to four source IDs from the current actor's material catalog.",
+         {'read_materials': {'items': {'type': 'string'}, 'title': 'Read Materials', 'type': 'array'},
+          'reason': {'title': 'Reason', 'type': 'string'}}, ['read_materials', 'reason']),
+        ('read_work', 'Read legal work records: candidate_options, visible_tickets, projects, topics, inbox, sent_messages, public_rules, source_catalog, analyses, last_receipt or resources. Follow returned read_work references for project tasks and records. Use next_offset to continue. No workspace paths.',
+         {'section': {'title': 'Section', 'type': 'string'},
+          'offset': {'default': 0, 'title': 'Offset', 'type': 'integer'}}, ['section']),
+        ('submit', 'Queue exactly one candidate from the legal observation. Wait is a valid candidate. Only propose_project requires analysis. A queued receipt is not execution success.',
+         {'candidate_id': {'title': 'Candidate Id', 'type': 'string'}, 'reason': {'title': 'Reason', 'type': 'string'},
+          'analysis': {'anyOf': [{'additionalProperties': True, 'type': 'object'}, {'type': 'null'}],
+                       'default': None, 'title': 'Analysis'}}, ['candidate_id', 'reason']),
+    ]
+    return [{'type': 'function', 'function': {'name': name, 'description': description,
+            'parameters': {'properties': properties, 'required': required, 'title': name + 'Arguments', 'type': 'object'}}}
+            for name, description, properties, required in specs]
+
+
+def _router_messages(messages):
+    """Saved JSON object key ordering cannot alter the official dialog meaning."""
+    import ast
+    import re
+    value = deepcopy(messages)
+    for row in value:
+        content = row.get('content')
+        if row.get('role') == 'tool':
+            row['content'] = _strict(content)
+        elif row.get('role') == 'user' and isinstance(content, str):
+            try:
+                content = re.sub(r'(?<=```python\n)(?:ctx = )?([^`]*?)(?=\n```)',
+                    lambda m: json.dumps(ast.literal_eval(m[0].removeprefix('ctx = ')), sort_keys=True, ensure_ascii=False), content)
+            except (SyntaxError, ValueError) as exc:
+                raise ValueError('Invalid serialized router prompt') from exc
+            content = re.sub(r'(?<=## Execution Process\n)(.*?)(?=\n\n## Results)',
+                lambda m: json.dumps(_strict(m[0]), sort_keys=True, ensure_ascii=False), content, flags=re.S)
+            row['content'] = content
+    return value
+
+
+def _audit_router_ask(ask, routes, decisions, current_time):
+    """Replay the installed official router with recorded responses and no tools."""
+    from datetime import datetime
+    from agentsociety2.env.router_react import ReActRouter
+    from jsonschema import validate, ValidationError
+    from litellm import ModelResponse
+
+    class Mismatch(BaseException):
+        # Audit mismatches must bypass the official recoverable-error retries.
+        pass
+
+    class Replay(ReActRouter):
+        def __init__(self):
+            self.env_modules = [object()]
+            self.max_steps = 10
+            self.t = datetime.fromisoformat(current_time)
+            self._all_tools = _environment_tools()
+            self._all_readonly_tools = [t for t in self._all_tools if t['function']['name'] != 'submit']
+            self._set_status_tool_schema = self._create_set_status_tool_schema()
+            self.model_index = self.route_index = 0
+
+        def set_trace_context(self, *args):
+            pass
+
+        def clear_trace_context(self):
+            pass
+
+        async def acompletion(self, model, messages, **kwargs):
+            if self.model_index >= len(decisions):
+                raise Mismatch('Router model call lacks execution trace')
+            row = decisions[self.model_index]
+            options = {k: deepcopy(kwargs[k]) for k in ('tools', 'tool_choice') if k in kwargs}
+            for field, expected in (('router_call_index', self.model_index), ('model_role', model),
+                                    ('messages', messages), ('request_options', options)):
+                actual = row.get(field)
+                differs = _router_messages(actual) != _router_messages(expected) if field == 'messages' else actual != expected
+                if differs:
+                    raise Mismatch('Router model ' + field + ' differs from official ask replay at call ' + str(self.model_index))
+            self.model_index += 1
+            return ModelResponse(**row['response'])
+
+        async def _execute_tool(self, name, args, readonly):
+            if self.route_index >= len(routes):
+                raise Mismatch('Router model tool call lacks actual receipt')
+            route = routes[self.route_index]
+            if (route.get('operation') != name or route.get('payload') != args
+                    or route.get('router_call_index') != self.model_index - 1):
+                raise Mismatch('Executed environment tool differs from raw router model intent')
+            self.route_index += 1
+            schema = next((t['function']['parameters'] for t in self._all_tools if t['function']['name'] == name), None)
+            valid = schema is not None and not (readonly and name == 'submit')
+            if valid:
+                try:
+                    validate(args, schema)
+                    valid = isinstance(args, dict) and set(args) <= set(schema['properties'])
+                except ValidationError:
+                    valid = False
+            if route['ok'] and not valid:
+                raise Mismatch('Invalid/unknown/readonly environment tool produced a side effect')
+            if not route['ok']:
+                if not isinstance(route.get('result'), dict) or not isinstance(route['result'].get('error'), str):
+                    raise Mismatch('Rejected environment tool lacks visible error')
+                raise ValueError(route['result']['error'])
+            return route['result']
+
+    replay = Replay()
+    args = ask['args']
+    variables = deepcopy((args.get('ctx') or {}).get('variables', {}))
+    if isinstance(args.get('variables'), dict):
+        variables = {**(variables if isinstance(variables, dict) else {}), **args['variables']}
+    ctx = {'actor_id': ask['actor_id'], 'round': ask['round'], 'variables': variables}
+    coro = replay.ask(ctx, ask['args']['instruction'], readonly=ask['args'].get('readonly', False), template_mode=True)
+    try:
+        try:
+            coro.send(None)
+        except StopIteration:
+            pass
+        else:
+            raise ValueError('Offline router replay unexpectedly suspended')
+    except Mismatch as exc:
+        raise ValueError(str(exc)) from None
+    finally:
+        coro.close()
+    _require(replay.model_index == len(decisions) and replay.route_index == len(routes),
+             'Router ask has unclaimed model calls or tool receipts')
+
+
+def audit_environment(routes, tool_receipts, environment_decisions=None, actor_decisions=()):
+    """Bind actual receipts to raw router intent; preserve explicit legacy dispatch."""
     from .interface import dispatch_plan
+    from .interface import RUNTIME_VERSION
     asks = {}
     for row in tool_receipts:
         if row.get('action') != 'ask_env':
@@ -365,12 +494,36 @@ def audit_environment(routes, tool_receipts):
         ask_id = row.get('data', {}).get('ask_id')
         _require(isinstance(ask_id, str) and str(uuid.UUID(ask_id)) == ask_id and ask_id not in asks, 'Missing/reused environment ask identity')
         asks[ask_id] = row
-    actual = defaultdict(list)
+    actual, model = defaultdict(list), defaultdict(list)
     for index, route in enumerate(routes):
-        _require(route.get('ordinal') == index and route.get('routing') == 'deterministic_template_dispatch' and not route.get('fallback'), 'Environment route order/runtime differs')
+        legacy = route.get('routing') == 'deterministic_template_dispatch' and route.get('runtime_version') in ('official-policy-4', 'official-policy-5')
+        native = route.get('routing') == 'official_react' and route.get('runtime_version') == RUNTIME_VERSION
+        _require(route.get('ordinal') == index and (legacy or native) and not route.get('fallback') and type(route.get('ok')) is bool
+                 and (not native or type(route.get('router_call_index')) is int), 'Environment route order/runtime differs')
         actual[route.get('ask_id')].append(route)
-    _require(set(actual) <= set(asks), 'Environment calls lack actor ask provenance')
+    for row in environment_decisions or []:
+        rid = row.get('request_id')
+        _require(rid is None or isinstance(rid, str) and str(uuid.UUID(rid)) == rid, 'Router request lacks canonical UUID')
+        _require(row.get('runtime_version') == RUNTIME_VERSION and row.get('model_role') in ('coder', 'summary')
+                 and type(row.get('router_call_index')) is int and row['router_call_index'] >= 0
+                 and type(row.get('offline')) is bool and row['offline'] == (row.get('request_id') is None),
+                 'Router model trace runtime/identity differs')
+        model[row.get('ask_id')].append(row)
+    _require(set(actual) | set(model) <= set(asks), 'Environment calls lack actor ask provenance')
+    actor_calls = {(*_key(r), r['call_index']): r for r in actor_decisions}
     for ask_id, ask in asks.items():
+        for route in actual[ask_id]:
+            _require(_key(route) == _key(ask) and route.get('actor_call_index') == ask['call_index'],
+                     'Environment tool differs from actor ask provenance')
+        source = actor_calls.get((*_key(ask), ask['call_index']))
+        native = bool(model[ask_id]) or any(r.get('routing') == 'official_react' for r in actual[ask_id]) or source and source.get('runtime_version') == RUNTIME_VERSION
+        if native:
+            _require(model[ask_id] and source, 'Official environment ask lacks raw model provenance')
+            _require(all(_key(r) == _key(ask) for r in model[ask_id]) and
+                     all(r.get('routing') == 'official_react' for r in actual[ask_id]), 'Mixed router runtime or request attribution')
+            _audit_router_ask(ask, actual[ask_id], model[ask_id], _prompt_blocks(source['messages'])['agent']['current_time'])
+            continue
+        _require(not model[ask_id] and actual[ask_id], 'Environment ask lacks explicit routing/runtime evidence')
         _require(len(actual[ask_id]) <= 1, 'One actor ask must execute at most one deterministic tool call')
         variables = ask['args'].get('variables')
         try:
@@ -482,7 +635,104 @@ def _audit_workspace_result(name, args, receipt, current, notes, workspace_root=
             _require(re.search(args['pattern'], match['text']) is not None, 'Native grep match differs from pattern')
 
 
-def audit_turns(decisions, observations, actions, reads, state, profile=None, tool_receipts=None, personal_contexts=None, environment_routes=None):
+class _TodoAudit:
+    """Use the official TODO operations against an in-memory personal workspace."""
+    def __init__(self, state, archive=()):
+        from agentsociety2.agent.base.todo import TodoStateStore, normalize_state
+        from agentsociety2.agent.base.agent import AgentBase
+        from datetime import datetime
+        normalized = normalize_state(state)
+        _require(normalized == state, 'Malformed immutable TODO state')
+
+        class Store(TodoStateStore):
+            def load(store):
+                return deepcopy(store.state)
+
+            def save(store, value):
+                value = normalize_state({**value, 'updated_at': store.stamp})
+                store._append_archive(store._archive_terminal(value, max_keep=8))
+                store.state = value
+                return deepcopy(value)
+
+            def _append_archive(store, records):
+                store.archive.extend(deepcopy(records))
+
+        class Dispatcher:
+            _enable_todo_list = True
+            _normalize_todo_due_value = AgentBase._normalize_todo_due_value
+            _normalize_todo_tool_args = AgentBase._normalize_todo_tool_args
+            dispatch_todo_tool = AgentBase.dispatch_todo_tool
+
+            def _todo_store(dispatcher):
+                return self.store
+
+            def _current_simulation_time(dispatcher):
+                return self.now
+
+        self.store = Store(Path('.'))
+        self.store.state, self.store.stamp = deepcopy(normalized), normalized['updated_at']
+        self.store.archive = [{k: v for k, v in r.items() if k != 'archived_at'} for r in archive]
+        self.dispatcher = Dispatcher()
+        self.now = datetime.min
+
+    def context(self, current_time):
+        from datetime import datetime
+        self.now = datetime.fromisoformat(current_time)
+        return self.store.build_prompt_context(self.now)
+
+    def apply(self, name, args, receipt):
+        from datetime import datetime
+        payload = deepcopy(args)
+        if receipt['ok'] and name != 'todo_list':
+            self.store.stamp = receipt['data']['state']['updated_at']
+            datetime.fromisoformat(self.store.stamp)
+        if name == 'todo_add' and receipt['ok']:
+            ident = receipt['data']['todo']['id']
+            _require(isinstance(ident, str) and ident.startswith('todo_') and uuid.UUID(ident[5:]).hex == ident[5:]
+                     and ident not in {t['id'] for t in [*self.store.state['todos'], *self.store.archive]}, 'TODO identifier missing or reused')
+            payload['id'] = ident
+        try:
+            result = self.dispatcher.dispatch_todo_tool(name, payload)
+            expected = (result.ok, result.observation, result.data)
+        except (ValueError, TypeError, KeyError) as exc:
+            expected = (False, str(exc), {'error': str(exc)})
+        _require(expected == (receipt['ok'], receipt['observation'], receipt['data']), 'TODO receipt differs from official personal-state replay')
+
+
+def _audit_skill_result(name, args, receipt, active, doc):
+    role_id = 'custom@policy-role'
+    requested = str(args.get('skill_name') or '')
+    resolved = role_id if requested.strip() in ('policy-role', role_id) else ''
+    if name == 'execute_skill_script' or name == 'read_skill_file' and args.get('path') != 'SKILL.md':
+        message = 'Policy role skills contain guidance only, not scripts.' if name == 'execute_skill_script' else 'Only the role guidance is available in the skill.'
+        _require(not receipt['ok'] and receipt['observation'] == message and receipt['data'] == {}, 'Unauthorized skill script/resource executed')
+        return active
+    if name == 'activate_skill':
+        _require(receipt['ok'] == bool(resolved), 'Skill activation differs from authorized catalog')
+        if resolved:
+            _require(receipt['observation'] == doc and receipt['data'] ==
+                     {'skill_id': role_id, 'skill_name': args['skill_name'], 'activated': True}, 'Activated skill content differs from frozen role guidance')
+            return True
+        _require(receipt['data'] == {'skill_id': '', 'skill_name': requested, 'activated': False, 'error': 'skill_not_resolved'}
+                 and receipt['observation'] == f"activate_skill failed: skill_name={requested!r} is not visible, does not exist, or is ambiguous; use a skill name from the visible skill catalog",
+                 'Failed skill activation exposed unauthorized context')
+    elif name == 'deactivate_skill':
+        removed = bool(resolved) and active
+        _require(receipt['ok'] and receipt['data'] == {'skill_id': resolved, 'removed': removed}
+                 and receipt['observation'] == (f'deactivated: {resolved}' if removed else f'not active: {resolved}'), 'Skill deactivation differs from authorized catalog')
+        return False if resolved else active
+    elif name == 'read_skill_file':
+        _require(receipt['ok'] == bool(resolved), 'Unauthorized skill resource exposed')
+        if resolved:
+            _require(receipt['observation'] == doc and receipt['data'] ==
+                     {'skill_id': role_id, 'path': 'SKILL.md', 'content_len': len(doc)}, 'Skill resource differs from frozen role guidance')
+        else:
+            _require(receipt['observation'] == '' and receipt['data'] == {'skill_id': '', 'path': 'SKILL.md', 'content_len': 0},
+                     'Unknown skill resource exposed unauthorized context')
+    return active
+
+
+def audit_turns(decisions, observations, actions, reads, state, profile=None, tool_receipts=None, personal_contexts=None, environment_routes=None, environment_decisions=None):
     """Replay lawful domain state while checking unmodified official transcripts."""
     from jsonschema import validate, ValidationError
     from agentsociety2.agent.base.tool_schema import react_tool_schemas
@@ -508,12 +758,13 @@ def audit_turns(decisions, observations, actions, reads, state, profile=None, to
     receipts_all = list(tool_receipts or [])
     _require(all(_key(r) in expected and type(r.get('call_index')) is int and 0 <= r['call_index'] < len(groups[_key(r)]) for r in receipts_all), 'Tool execution outside committed call')
     env_routes = list(environment_routes or [])
-    audit_environment(env_routes, receipts_all)
+    audit_environment(env_routes, receipts_all, environment_decisions, decisions)
     route_groups = defaultdict(list)
     for route in env_routes:
         route_groups[route['ask_id']].append(route)
-    official_tools = react_tool_schemas(enable_todo_list=False, enable_memory=True, disable_skills=True,
-        overrides={'finish': finish_step_tool_schema()})
+    from .interface import RUNTIME_VERSION
+    from agentsociety2.agent.person_prompt import skill_content_xml
+    role_doc = (Path(__file__).resolve().parents[1] / 'custom/skills/policy-role/SKILL.md').read_text(encoding='utf-8')
     summaries, selected_routes = {}, []
     for key in sorted(expected):
         current, selected, used, finished = deepcopy(obs[key]['observation']), None, 0, False
@@ -523,6 +774,14 @@ def audit_turns(decisions, observations, actions, reads, state, profile=None, to
         history = None
         personal = None
         notes = deepcopy((personal_contexts or {}).get(key, {}).get('notes', {}))
+        native = not env_routes or all(r.get('runtime_version') == RUNTIME_VERSION for r in env_routes)
+        _require(not profile or profile.get('router_kind') != 'official_react' or native, 'Current runtime cannot use legacy deterministic routes')
+        active_skill = native
+        todo = _TodoAudit((personal_contexts or {}).get(key, {}).get('todo',
+                         {'todos': [], 'active_todo_id': None, 'updated_at': '2000-01-01T00:00:00'}),
+                         (personal_contexts or {}).get(key, {}).get('todo_archive', [])) if native else None
+        official_tools = react_tool_schemas(enable_todo_list=native, enable_memory=True, disable_skills=not native,
+            overrides={'finish': finish_step_tool_schema()})
         previous_turn = 0
         for index, row in enumerate(rows):
             _require(row.get('call_index') == index and row.get('readonly') is False and not finished, 'Call ordering/readonly/finish differs')
@@ -532,33 +791,42 @@ def audit_turns(decisions, observations, actions, reads, state, profile=None, to
                             if (r.get('data') or {}).get('ask_id')]
             identity = blocks['agent']
             from .work import business_receipt
-            pinned_work = {'phase': 'finish' if selected is not None else 'choose',
-                'round': current.get('round'), 'role': current.get('role'),
+            pinned_work = {'round': current.get('round'), 'role': current.get('role'),
                 'candidate_count': len(current.get('candidate_options', [])),
                 'queued_receipt': business_receipt(logged[key]['receipt']) if selected is not None else None,
                 'note': '完整候选、材料与字段经observe和read_work获取。'}
+            if not native:
+                pinned_work['phase'] = 'finish' if selected is not None else 'choose'
             _require(identity.get('agent_id') == key[1] and identity.get('current_work') == pinned_work, 'Actor official identity/current work differs')
+            expected_skills = {'visible': ['custom@policy-role'], 'activated': ['custom@policy-role'] if active_skill else [],
+                'disabled': [], 'default_activated': ['custom@policy-role']} if native else {'visible': [], 'activated': [], 'disabled': [], 'default_activated': []}
+            _require(identity.get('skills') == expected_skills and identity.get('memory') ==
+                     {'enabled': True, 'summary_path': 'MEMORY.md', 'episodes_path': 'memory/episodes.jsonl'},
+                     'Native identity enables unauthorized skill or memory configuration')
+            if native:
+                _require(blocks.get('todo_context') == todo.context(identity['current_time']), 'Prompt TODO context differs from personal-state replay')
             if personal_contexts is not None:
                 saved = personal_contexts[key]
                 _require(all(identity.get(k) == saved['identity'].get(k) for k in ('schema_version', 'agent_class', 'agent_id', 'name', 'profile')) and blocks.get('memory_context') == saved['memory_context'], 'Prompt personal memory differs from immutable round-start workspace')
-                _require(identity.get('skills') == {'visible': [], 'activated': [], 'disabled': [], 'default_activated': []} and identity.get('memory') == {'enabled': True, 'summary_path': 'MEMORY.md', 'episodes_path': 'memory/episodes.jsonl'}, 'Native identity enables unauthorized skill or memory configuration')
                 if key[0] > 0:
                     _require(identity.get('initialized_at') == saved['identity'].get('initialized_at'), 'Native initialization identity changed after checkpoint')
             from agentsociety2.agent.person_prompt import build_react_messages
             from .prompt import WORLD_DESCRIPTION
             official_message = build_react_messages(name=identity.get('name'), world_description=WORLD_DESCRIPTION,
-                skill_catalog=[], activated_skill_content='', observations=blocks['recent_observations'],
-                agent_json=identity, memory_context=blocks.get('memory_context'), todo_context=None, disable_skills=True)
+                skill_catalog=[{'name': 'policy-role', 'description': '政务办理岗位的合法信息、材料阅读、提交和交接规则。'}] if native else [],
+                activated_skill_content=skill_content_xml(name='policy-role', content=role_doc, resources=['SKILL.md']) if active_skill else '',
+                observations=blocks['recent_observations'], agent_json=identity,
+                memory_context=blocks.get('memory_context'), todo_context=blocks.get('todo_context'), disable_skills=not native)
             # Verify the two allowed text deltas independently, rather than
             # calling the execution adapter as the audit's answer.
             from .official_adapter import PROMPT_CORRECTIONS
             actual_system = row['messages'][0]['content']
-            for original, replacement in PROMPT_CORRECTIONS:
+            for original, replacement in PROMPT_CORRECTIONS if native else PROMPT_CORRECTIONS[:2]:
                 _require(actual_system.count(replacement) == 1 and original not in actual_system, 'Missing or repeated business prompt correction')
                 actual_system = actual_system.replace(replacement, original)
             _require({'role': 'system', 'content': actual_system} == official_message[0]
                 and row['messages'][1] == official_message[1], 'Prompt differs beyond the allowed official text corrections')
-            snapshot = ({k:v for k,v in identity.items() if k != 'current_work'}, blocks.get('memory_context'), row['messages'][0])
+            snapshot = ({k:v for k,v in identity.items() if k not in {'current_work', 'skills'}}, blocks.get('memory_context'))
             _require(personal is None or personal == snapshot, 'Personal/system context changed during one actor phase')
             personal = snapshot
             turn = row.get('official_turn')
@@ -593,7 +861,7 @@ def audit_turns(decisions, observations, actions, reads, state, profile=None, to
                     validate(args, schemas[name])
                     if name == 'finish':
                         _finish(args)
-                        _require(selected is not None and len(calls) == 1, 'Premature or mixed finish')
+                        _require(len(calls) == 1, 'Mixed finish')
             except (ValueError, TypeError, KeyError, IndexError, AttributeError, ValidationError):
                 _require(row.get('response_error') and not receipts and
                          (index < len(rows)-1 or same_turn and turn == (profile or {}).get('max_react_turns', 10)),
@@ -614,27 +882,37 @@ def audit_turns(decisions, observations, actions, reads, state, profile=None, to
                     elif name.startswith('memory_'):
                         _require(personal_contexts is not None or key[0] == 0, 'Memory retrieval lacks immutable round-start evidence')
                         _audit_memory_result(name, args, receipt, (personal_contexts or {}).get(key, {}).get('episodes', []))
+                    elif name.startswith('todo_'):
+                        _require(todo is not None, 'Legacy turn used unavailable TODO tool')
+                        todo.apply(name, args, receipt)
+                    elif name in {'activate_skill', 'deactivate_skill', 'read_skill_file', 'execute_skill_script'}:
+                        active_skill = _audit_skill_result(name, args, receipt, active_skill, role_doc)
                     continue
                 ask_id = receipt.get('data', {}).get('ask_id')
                 routed = route_groups[ask_id]
                 expected_answer = {'status': 'success' if routed and all(r['ok'] for r in routed) else 'fail', 'receipts': [{k: r[k] for k in ('operation', 'payload', 'result', 'ok')} for r in routed]}
                 if not routed:
-                    from .interface import dispatch_plan
-                    try:
-                        dispatch_plan(args.get('instruction'), args.get('variables'))
-                    except ValueError as exc:
-                        expected_answer['error'] = str(exc)
+                    if native:
+                        expected_answer['error'] = 'No environment tool executed'
                     else:
-                        _require(False, 'Dispatchable instruction executed no environment tool')
+                        from .interface import dispatch_plan
+                        try:
+                            dispatch_plan(args.get('instruction'), args.get('variables'))
+                        except ValueError as exc:
+                            expected_answer['error'] = str(exc)
+                        else:
+                            _require(False, 'Dispatchable instruction executed no environment tool')
                 _require(_strict(receipt['observation']) == expected_answer and receipt['data'] == {'instruction': args['instruction'], 'template_mode': True, 'ask_id': ask_id}, 'Actor environment receipt differs from executed router results')
                 for route in routed:
                     _require(route.get('visible_asks') == visible_asks and route.get('actor_turn') == turn,
                              'Router context differs from official observation window/turn')
-                    op, payload = route['operation'], dict(route['payload'])
-                    payload.pop('context_sha256', None)
                     if not route['ok']:
                         continue
-                    _require(selected is None or op == 'observe', 'Repeated environment mutation after submission')
+                    op, payload = route['operation'], dict(route['payload'])
+                    if not native:
+                        payload.pop('context_sha256', None)
+                    _require(selected is None or (op != 'submit' if native else op == 'observe'),
+                             'Repeated environment submission or unauthorized post-submission operation')
                     if op == 'observe':
                         expected_result = session.current_work
                     elif op == 'read_work':
@@ -650,8 +928,11 @@ def audit_turns(decisions, observations, actions, reads, state, profile=None, to
                             read_ledger[ledger_key] = (page, ask_id)
                             read_counts[ledger_key] = 1
                             expected_result = page
-                        expected_result = paced(turn - 1, expected_result)
+                        if not native:
+                            expected_result = paced(turn - 1, expected_result)
                     elif op == 'submit':
+                        if native and payload.get('analysis') is None:
+                            payload.pop('analysis', None)
                         selected = validate_action(decode_candidate_choice(payload, current), current)
                         expected_result = {'action': selected, 'receipt': logged[key]['receipt']}
                     else:
@@ -675,14 +956,24 @@ def audit_turns(decisions, observations, actions, reads, state, profile=None, to
                             current = session.observation
                             _require(read['after_context_sha256'] == current['context_sha256'], 'Material query result hash differs')
                             used += 1
-                        expected_result = paced(turn - 1, expected_result)
+                        if not native:
+                            expected_result = paced(turn - 1, expected_result)
                     _require(route['result'] == expected_result, 'Environment result differs from independent business replay')
                     selected_routes.append(route)
         _require(finished or rows[-1]['official_turn'] == (profile or {}).get('max_react_turns', 10),
                  'Unfinished turn did not exhaust the official loop')
+        if native and personal_contexts is not None:
+            saved = personal_contexts[key]
+            from agentsociety2.agent.base.todo import normalize_state
+            from datetime import datetime
+            final_todo = saved['todo_final']
+            datetime.fromisoformat(final_todo['updated_at'])
+            _require(normalize_state(final_todo) == final_todo and all(todo.store.state[k] == final_todo[k] for k in ('todos', 'active_todo_id')) and todo.store.archive ==
+                     [{k: v for k, v in r.items() if k != 'archived_at'} for r in saved['todo_archive_final']],
+                     'Saved TODO workspace differs from official personal-state replay')
         if key in unfiled:
             from .failure import unfiled_receipt
-            _require(selected is None and not finished, 'Unfiled turn contains a submission or finish')
+            _require(selected is None, 'Unfiled turn contains a submission')
             summaries[key] = {'completion_calls': len(rows), 'receipt': unfiled_receipt(key[1], key[0]),
                               'submitted': False, 'unfiled': True}
             _require(used == len(read_groups[key]), 'Unclaimed material query')
@@ -724,10 +1015,30 @@ def audit_personal_contexts(run_dir, state, frozen):
             if len(text) > cap:
                 text = text[:cap] + '\n...<truncated>'
             episodes = _rows(path.parent / 'memory/episodes.jsonl')[-frozen['runtime_profile']['recent_memory_limit']:]
+            following = next((p / f'round-{round_index + 1:06d}' for p in parents
+                              if (p / f'round-{round_index + 1:06d}').is_dir()), root)
+            final_folder = following / path.parent.relative_to(snapshot)
+            todo_path, final_todo_path = path.parent / 'TODO.json', final_folder / 'TODO.json'
+            todo_fields = {}
+            from .interface import RUNTIME_VERSION
+            config = _read(path.parent / 'config.json')
+            if frozen['runtime_profile'].get('router_kind') == 'official_react':
+                _require(config.get('runtime_version') == RUNTIME_VERSION and config.get('enable_memory') is True
+                         and config.get('enable_todo_list') is True and config.get('default_activated_skill_ids') == ['custom@policy-role']
+                         and config.get('extra_skill_paths') == [str(Path(__file__).resolve().parents[1] / 'custom/skills')],
+                         'Immutable actor config differs from frozen Skill/TODO runtime')
+                _require(todo_path.is_file() or round_index == 0, 'Missing immutable TODO state after initialization')
+                final_todo = _read(final_todo_path)
+                todo_fields = {'todo': _read(todo_path) if todo_path.is_file() else
+                    {'todos': [], 'active_todo_id': None, 'updated_at': final_todo['updated_at']},
+                    'todo_archive': _rows(path.parent / 'state/todos_archive.jsonl'),
+                    'todo_final': final_todo,
+                    'todo_archive_final': _rows(final_folder / 'state/todos_archive.jsonl')}
             contexts[round_index, actor] = {
                 'identity': meta,
                 'episodes': _rows(path.parent / 'memory/episodes.jsonl'),
                 'notes': {str(p.relative_to(path.parent)): p.read_text(encoding='utf-8') for p in (path.parent / 'notes').rglob('*') if p.is_file()},
+                **todo_fields,
                 'memory_context': {'memory_md': text, 'recent_episodes': episodes,
                     'files': {'summary': 'MEMORY.md', 'episodes': 'memory/episodes.jsonl'}}}
     return contexts

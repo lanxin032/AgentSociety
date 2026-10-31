@@ -4,9 +4,8 @@
 !/AGENTS.md
 !/README.md
 !/environment.yml
-!/policy_v3/
+!/requirements.lock
 !/policy_sim/
-!/policy_mve/
 !/custom/
 !/tools/
 !/tests/
@@ -83,6 +82,19 @@ __pycache__/
 node_modules/
 
 # Shared execution modules and the domain glossary
-!/policy_runtime/
 !/CONTEXT.md
 !/ARCHITECTURE.md
+
+!/research/v3_1/token-diagnosis.html
+!/research/v3_1/native-refactor-design.md
+!/research/v3_1/official-agentic-loop-20261031.md
+
+# Reviewed architecture figures; execution artifacts remain excluded.
+!/figures/
+/figures/*
+!/figures/current-agent-simulation.mmd
+!/figures/current-agent-simulation.md
+!/figures/current-agent-simulation.png
+!/figures/proposed-agent-simulation.mmd
+!/figures/proposed-agent-simulation.md
+!/figures/proposed-agent-simulation.png
